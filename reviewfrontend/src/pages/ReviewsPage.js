@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-//import { format, parseISO } from 'date-fns';
-import { 
-  Container, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  Typography, 
+import {
+  Container,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
   Button,
   Dialog,
   DialogTitle,
@@ -19,7 +18,9 @@ import {
   TextField,
   Box,
   Rating,
-  Stack
+  Stack,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
@@ -38,18 +39,32 @@ const ReviewsPage = () => {
     recommendations: '',
     rating: 3
   });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
 
-  useEffect(() => {
-    fetchReviews();
+  const showSnackbar = useCallback((message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
   }, []);
 
-  const fetchReviews = async () => {
+  const fetchReviews = useCallback(async () => {
     try {
       const response = await axios.get('http://localhost:5000/api/reviews');
       setReviews(response.data);
     } catch (error) {
       console.error('Error fetching reviews:', error);
+      showSnackbar('Error fetching reviews', 'error');
     }
+  }, [showSnackbar]);
+
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   const handleOpen = (review = null) => {
@@ -97,13 +112,16 @@ const ReviewsPage = () => {
     try {
       if (currentReview) {
         await axios.patch(`http://localhost:5000/api/reviews/${currentReview}`, formData);
+        showSnackbar('Review updated successfully');
       } else {
         await axios.post('http://localhost:5000/api/reviews', formData);
+        showSnackbar('Review added successfully');
       }
       fetchReviews();
       handleClose();
     } catch (error) {
       console.error('Error saving review:', error);
+      showSnackbar('Error saving review', 'error');
     }
   };
 
@@ -111,8 +129,10 @@ const ReviewsPage = () => {
     try {
       await axios.delete(`http://localhost:5000/api/reviews/${id}`);
       fetchReviews();
+      showSnackbar('Review deleted successfully');
     } catch (error) {
       console.error('Error deleting review:', error);
+      showSnackbar('Error deleting review', 'error');
     }
   };
 
@@ -122,9 +142,9 @@ const ReviewsPage = () => {
         <Typography variant="h4" component="h1">
           Deployment Reviews
         </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
+        <Button
+          variant="contained"
+          color="primary"
           startIcon={<Add />}
           onClick={() => handleOpen()}
         >
@@ -155,16 +175,16 @@ const ReviewsPage = () => {
                 </TableCell>
                 <TableCell>{review.recommendations}</TableCell>
                 <TableCell>
-                  <Button 
-                    size="small" 
+                  <Button
+                    size="small"
                     color="primary"
                     startIcon={<Edit />}
                     onClick={() => handleOpen(review)}
                   >
                     Edit
                   </Button>
-                  <Button 
-                    size="small" 
+                  <Button
+                    size="small"
                     color="error"
                     startIcon={<Delete />}
                     onClick={() => handleDelete(review._id)}
@@ -230,6 +250,17 @@ const ReviewsPage = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={snackbar.severity} onClose={handleCloseSnackbar} sx={{ width: '100%' }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
