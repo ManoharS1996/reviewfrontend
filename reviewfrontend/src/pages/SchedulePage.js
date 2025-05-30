@@ -27,6 +27,12 @@ import {
   Tab,
   Snackbar,
   Alert,
+  Select,
+  FormControl,
+  InputLabel,
+  OutlinedInput,
+  Checkbox,
+  ListItemText
 } from '@mui/material';
 import { Add, Edit, Delete, AccessTime, Schedule } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
@@ -35,7 +41,16 @@ const statusColors = {
   Scheduled: 'primary',
   'In Progress': 'warning',
   Completed: 'success',
+  Failed: 'error'
 };
+
+const developerOptions = [
+  'Kartheek M',
+  'Sandhya C',
+  'Sivakumar E',
+  'Praveen Kumar K',
+  'Manojkumar C'
+];
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -75,6 +90,7 @@ const SchedulePage = () => {
     timings: '',
     status: 'Scheduled',
     notes: '',
+    developers: []
   });
 
   const fetchSchedules = useCallback(async () => {
@@ -108,6 +124,7 @@ const SchedulePage = () => {
         timings: schedule.timings,
         status: schedule.status,
         notes: schedule.notes,
+        developers: schedule.notificationDetails?.recipients || []
       });
     } else {
       setCurrentSchedule(null);
@@ -117,6 +134,7 @@ const SchedulePage = () => {
         timings: '',
         status: 'Scheduled',
         notes: '',
+        developers: []
       });
     }
     setOpen(true);
@@ -138,6 +156,11 @@ const SchedulePage = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDeveloperChange = (event) => {
+    const { value } = event.target;
+    setFormData({ ...formData, developers: typeof value === 'string' ? value.split(',') : value });
   };
 
   const handleSubmit = async (e) => {
@@ -209,6 +232,7 @@ const SchedulePage = () => {
                 </Box>
               </StyledTableCell>
               <StyledTableCell>Status</StyledTableCell>
+              <StyledTableCell>Developers</StyledTableCell>
               <StyledTableCell>Notes</StyledTableCell>
               <StyledTableCell>Actions</StyledTableCell>
             </TableRow>
@@ -227,6 +251,9 @@ const SchedulePage = () => {
                     label={schedule.status}
                     color={statusColors[schedule.status] || 'default'}
                   />
+                </TableCell>
+                <TableCell>
+                  {schedule.notificationDetails?.recipients?.join(', ') || 'None'}
                 </TableCell>
                 <TableCell>{schedule.notes}</TableCell>
                 <TableCell>
@@ -255,7 +282,7 @@ const SchedulePage = () => {
       </TableContainer>
 
       {/* Dialog Form */}
-      <Dialog open={open} onClose={handleClose}>
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
         <DialogTitle>{currentSchedule ? 'Edit Schedule' : 'Add New Schedule'}</DialogTitle>
         <DialogContent>
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
@@ -303,12 +330,31 @@ const SchedulePage = () => {
               value={formData.status}
               onChange={handleChange}
             >
-              {['Scheduled', 'In Progress', 'Completed'].map((option) => (
+              {['Scheduled', 'In Progress', 'Completed', 'Failed'].map((option) => (
                 <MenuItem key={option} value={option}>
                   {option}
                 </MenuItem>
               ))}
             </TextField>
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="developers-label">Developers</InputLabel>
+              <Select
+                labelId="developers-label"
+                id="developers"
+                multiple
+                value={formData.developers}
+                onChange={handleDeveloperChange}
+                input={<OutlinedInput label="Developers" />}
+                renderValue={(selected) => selected.join(', ')}
+              >
+                {developerOptions.map((developer) => (
+                  <MenuItem key={developer} value={developer}>
+                    <Checkbox checked={formData.developers.indexOf(developer) > -1} />
+                    <ListItemText primary={developer} />
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
             <TextField
               margin="normal"
               fullWidth
