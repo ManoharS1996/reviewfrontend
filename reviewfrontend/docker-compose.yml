@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  review-backend:
+    build: ./ReviewBackend
+    ports:
+      - "5000:5000"
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - MONGO_URI=${MONGO_URI}
+    restart: unless-stopped
+    networks:
+      - review-network
+
+  review-frontend:
+    build: ./reviewfrontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:5000
+    depends_on:
+      - review-backend
+    restart: unless-stopped
+    networks:
+      - review-network
+
+  deployment-manager:
+    build: ./deployment-manager
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./reviewfrontend:/app/reviewfrontend
+      - ./ReviewBackend:/app/ReviewBackend
+    environment:
+      - FRONTEND_DIR=/app/reviewfrontend
+      - BACKEND_DIR=/app/ReviewBackend
+    restart: unless-stopped
+    networks:
+      - review-network
+
+networks:
+  review-network:
+    driver: bridge
