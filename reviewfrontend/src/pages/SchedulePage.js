@@ -2,32 +2,46 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { format, parseISO } from 'date-fns';
 import {
-  Container, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Typography, Button, Chip, Box, CircularProgress, Snackbar, Alert,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select,
-  MenuItem, FormControl, InputLabel, IconButton, Tooltip
+  Container,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
+  Button,
+  Chip,
+  Box,
+  CircularProgress,
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  IconButton,
+  Tooltip
 } from '@mui/material';
 import { Add, Edit, Delete, Notifications, AccessTime } from '@mui/icons-material';
 
-// Generate time slots for the entire day (1-hour and 2-hour slots)
-const generateTimeSlots = () => {
-  const slots = [];
-  // 1-hour slots
-  for (let hour = 0; hour < 24; hour++) {
-    const startHour = hour.toString().padStart(2, '0');
-    const endHour = (hour + 1).toString().padStart(2, '0');
-    slots.push(`${startHour}:00-${endHour}:00`);
-  }
-  // 2-hour slots
-  for (let hour = 0; hour < 24; hour += 2) {
-    const startHour = hour.toString().padStart(2, '0');
-    const endHour = (hour + 2).toString().padStart(2, '0');
-    slots.push(`${startHour}:00-${endHour}:00`);
-  }
-  return [...new Set(slots)].sort();
-};
-
-const timeSlots = generateTimeSlots();
+const timeSlots = [
+  '00:00-01:00', '01:00-02:00', '02:00-03:00', '03:00-04:00', 
+  '04:00-05:00', '05:00-06:00', '06:00-07:00', '07:00-08:00',
+  '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
+  '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00',
+  '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00',
+  '20:00-21:00', '21:00-22:00', '22:00-23:00', '23:00-00:00',
+  '00:00-02:00', '02:00-04:00', '04:00-06:00', '06:00-08:00',
+  '08:00-10:00', '10:00-12:00', '12:00-14:00', '14:00-16:00',
+  '16:00-18:00', '18:00-20:00', '20:00-22:00', '22:00-00:00'
+];
 
 const statusOptions = ['Scheduled', 'In Progress', 'Completed', 'Failed'];
 const statusColors = {
@@ -38,14 +52,13 @@ const statusColors = {
 };
 
 const developerEmails = [
-  'manohar142652@gmail.com',
-  'manohar.srungaram@nowitservices.com',
   'manojkumar.chandanada@nowitservices.com',
   'sivakumar.erugu@nowitservices.com',
   'kartheek.muppiri@nowitservices.com',
   'sandhya.chattu@nowitservices.com',
   'sriram.k@nowitservices.com',
-  'praveen.kournopo@nowitservices.com'
+  'praveen.kournopo@nowitservices.com',
+  'manohar.srungaram@nowitservices.com'
 ];
 
 const SchedulePage = () => {
@@ -64,7 +77,7 @@ const SchedulePage = () => {
     deploymentDate: format(new Date(), 'yyyy-MM-dd'),
     timeSlot: timeSlots[0],
     status: 'Scheduled',
-    developers: ['manohar142652@gmail.com'],
+    developers: [],
     notes: ''
   });
   const [snackbar, setSnackbar] = useState({
@@ -76,7 +89,12 @@ const SchedulePage = () => {
   const fetchSchedules = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get('http://localhost:5000/api/schedules');
+      const token = localStorage.getItem('token');
+      const { data } = await axios.get('http://localhost:5000/api/schedules', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       setSchedules(data.data);
     } catch (error) {
       showSnackbar('Error loading schedules', 'error');
@@ -91,6 +109,10 @@ const SchedulePage = () => {
 
   const showSnackbar = (message, severity = 'success') => {
     setSnackbar({ open: true, message, severity });
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar(prev => ({ ...prev, open: false }));
   };
 
   const handleOpenForm = (schedule = null) => {
@@ -111,44 +133,72 @@ const SchedulePage = () => {
         deploymentDate: format(new Date(), 'yyyy-MM-dd'),
         timeSlot: timeSlots[0],
         status: 'Scheduled',
-        developers: ['manohar142652@gmail.com'],
+        developers: [],
         notes: ''
       });
     }
     setOpenForm(true);
   };
 
+  const handleCloseForm = () => {
+    setOpenForm(false);
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const token = localStorage.getItem('token');
       const data = {
         ...formData,
-        scheduledBy: 'frontend-user'
+        timings: formData.timeSlot
       };
 
       if (currentSchedule) {
         await axios.patch(
           `http://localhost:5000/api/schedules/${currentSchedule}`,
-          data
+          data,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
         );
         showSnackbar('Schedule updated successfully!', 'success');
       } else {
         await axios.post(
           'http://localhost:5000/api/schedules',
-          data
+          data,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
         );
         showSnackbar('Schedule created successfully!', 'success');
       }
       fetchSchedules();
       setOpenForm(false);
     } catch (error) {
-      showSnackbar('Error saving schedule', 'error');
+      showSnackbar(error.response?.data?.error || 'Error saving schedule', 'error');
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/schedules/${id}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/schedules/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       showSnackbar('Schedule deleted successfully!', 'success');
       fetchSchedules();
     } catch (error) {
@@ -156,18 +206,37 @@ const SchedulePage = () => {
     }
   };
 
+  const handleOpenStatusDialog = (scheduleId, status) => {
+    setStatusDialog({
+      open: true,
+      scheduleId,
+      status,
+      failureReason: ''
+    });
+  };
+
+  const handleCloseStatusDialog = () => {
+    setStatusDialog(prev => ({ ...prev, open: false }));
+  };
+
   const handleStatusChange = async () => {
     try {
+      const token = localStorage.getItem('token');
       await axios.patch(
-        `http://localhost:5000/api/schedules/${statusDialog.scheduleId}/status`,
+        `http://localhost:5000/api/schedules/${statusDialog.scheduleId}`,
         {
           status: statusDialog.status,
           failureReason: statusDialog.status === 'Failed' ? statusDialog.failureReason : undefined
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
       );
       showSnackbar(`Status updated to ${statusDialog.status}`, 'success');
       fetchSchedules();
-      setStatusDialog({ ...statusDialog, open: false });
+      setStatusDialog(prev => ({ ...prev, open: false }));
     } catch (error) {
       showSnackbar('Error updating status', 'error');
     }
@@ -175,7 +244,16 @@ const SchedulePage = () => {
 
   const handleResendNotification = async (id) => {
     try {
-      await axios.post(`http://localhost:5000/api/schedules/${id}/notify`);
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `http://localhost:5000/api/schedules/${id}/notify`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
       showSnackbar('Notification resent successfully!', 'success');
     } catch (error) {
       showSnackbar('Error resending notification', 'error');
@@ -185,7 +263,7 @@ const SchedulePage = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: 'primary.main' }}>
+        <Typography variant="h4" component="h1">
           Deployment Schedule
         </Typography>
         <Button
@@ -193,7 +271,6 @@ const SchedulePage = () => {
           color="primary"
           startIcon={<Add />}
           onClick={() => handleOpenForm()}
-          sx={{ boxShadow: 3 }}
         >
           New Schedule
         </Button>
@@ -204,17 +281,17 @@ const SchedulePage = () => {
           <CircularProgress size={60} />
         </Box>
       ) : (
-        <TableContainer component={Paper} sx={{ boxShadow: 3 }}>
+        <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white' }}>#</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white' }}>App Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white' }}>Deployment Date</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white' }}>Time Slot</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white' }}>Developers</TableCell>
-                <TableCell sx={{ fontWeight: 'bold', backgroundColor: 'primary.main', color: 'white' }}>Actions</TableCell>
+                <TableCell>#</TableCell>
+                <TableCell>App Name</TableCell>
+                <TableCell>Deployment Date</TableCell>
+                <TableCell>Time Slot</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Developers</TableCell>
+                <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -226,12 +303,12 @@ const SchedulePage = () => {
                 </TableRow>
               ) : (
                 schedules.map((schedule, index) => (
-                  <TableRow key={schedule._id} hover>
+                  <TableRow key={schedule._id}>
                     <TableCell>{index + 1}</TableCell>
-                    <TableCell sx={{ fontWeight: 'bold' }}>{schedule.appName}</TableCell>
+                    <TableCell>{schedule.appName}</TableCell>
                     <TableCell>
                       {format(parseISO(schedule.deploymentDate), 'MMM dd, yyyy')}
-                      <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <AccessTime fontSize="small" sx={{ mr: 0.5 }} />
                         {schedule.timeSlot}
                       </Box>
@@ -241,25 +318,14 @@ const SchedulePage = () => {
                       <FormControl fullWidth size="small">
                         <Select
                           value={schedule.status}
-                          onChange={(e) => {
-                            setStatusDialog({
-                              open: true,
-                              scheduleId: schedule._id,
-                              status: e.target.value,
-                              failureReason: schedule.failureReason || ''
-                            });
-                          }}
-                          sx={{
-                            backgroundColor: `${statusColors[schedule.status]}.light`,
-                            color: 'common.white',
-                            fontWeight: 'bold',
-                            '& .MuiSelect-icon': {
-                              color: 'common.white'
-                            }
-                          }}
+                          onChange={(e) => handleOpenStatusDialog(schedule._id, e.target.value)}
                         >
                           {statusOptions.map((status) => (
-                            <MenuItem key={status} value={status}>
+                            <MenuItem 
+                              key={status} 
+                              value={status}
+                              sx={{ backgroundColor: `${statusColors[status]}.light`, color: 'white' }}
+                            >
                               {status}
                             </MenuItem>
                           ))}
@@ -309,7 +375,7 @@ const SchedulePage = () => {
       )}
 
       {/* Schedule Form Dialog */}
-      <Dialog open={openForm} onClose={() => setOpenForm(false)} fullWidth maxWidth="sm">
+      <Dialog open={openForm} onClose={handleCloseForm} fullWidth maxWidth="sm">
         <DialogTitle>{currentSchedule ? 'Edit Schedule' : 'Create New Schedule'}</DialogTitle>
         <DialogContent>
           <Box component="form" sx={{ mt: 2 }}>
@@ -320,7 +386,7 @@ const SchedulePage = () => {
               label="App Name"
               name="appName"
               value={formData.appName}
-              onChange={(e) => setFormData({...formData, appName: e.target.value})}
+              onChange={handleFormChange}
             />
             <TextField
               margin="normal"
@@ -331,14 +397,14 @@ const SchedulePage = () => {
               name="deploymentDate"
               InputLabelProps={{ shrink: true }}
               value={formData.deploymentDate}
-              onChange={(e) => setFormData({...formData, deploymentDate: e.target.value})}
+              onChange={handleFormChange}
             />
             <FormControl fullWidth margin="normal">
               <InputLabel>Time Slot</InputLabel>
               <Select
                 name="timeSlot"
                 value={formData.timeSlot}
-                onChange={(e) => setFormData({...formData, timeSlot: e.target.value})}
+                onChange={handleFormChange}
                 label="Time Slot"
               >
                 {timeSlots.map(slot => (
@@ -354,7 +420,7 @@ const SchedulePage = () => {
               label="Notes"
               name="notes"
               value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              onChange={handleFormChange}
             />
             <FormControl fullWidth margin="normal">
               <InputLabel>Developers</InputLabel>
@@ -362,7 +428,7 @@ const SchedulePage = () => {
                 multiple
                 name="developers"
                 value={formData.developers}
-                onChange={(e) => setFormData({...formData, developers: e.target.value})}
+                onChange={handleFormChange}
                 label="Developers"
                 renderValue={(selected) => selected.join(', ')}
               >
@@ -374,7 +440,7 @@ const SchedulePage = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenForm(false)}>Cancel</Button>
+          <Button onClick={handleCloseForm}>Cancel</Button>
           <Button onClick={handleSubmit} color="primary" variant="contained">
             {currentSchedule ? 'Update' : 'Create'}
           </Button>
@@ -382,14 +448,14 @@ const SchedulePage = () => {
       </Dialog>
 
       {/* Status Change Dialog */}
-      <Dialog open={statusDialog.open} onClose={() => setStatusDialog({ ...statusDialog, open: false })}>
+      <Dialog open={statusDialog.open} onClose={handleCloseStatusDialog}>
         <DialogTitle>Update Deployment Status</DialogTitle>
         <DialogContent>
           <FormControl fullWidth margin="normal">
             <InputLabel>Status</InputLabel>
             <Select
               value={statusDialog.status}
-              onChange={(e) => setStatusDialog({ ...statusDialog, status: e.target.value })}
+              onChange={(e) => setStatusDialog(prev => ({ ...prev, status: e.target.value }))}
               label="Status"
             >
               {statusOptions.map((status) => (
@@ -406,13 +472,13 @@ const SchedulePage = () => {
               rows={3}
               label="Failure Reason"
               value={statusDialog.failureReason}
-              onChange={(e) => setStatusDialog({ ...statusDialog, failureReason: e.target.value })}
+              onChange={(e) => setStatusDialog(prev => ({ ...prev, failureReason: e.target.value }))}
               required
             />
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setStatusDialog({ ...statusDialog, open: false })}>Cancel</Button>
+          <Button onClick={handleCloseStatusDialog}>Cancel</Button>
           <Button 
             onClick={handleStatusChange} 
             color="primary" 
@@ -427,10 +493,10 @@ const SchedulePage = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar({...snackbar, open: false})}
+        onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={() => setSnackbar({...snackbar, open: false})} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

@@ -20,7 +20,8 @@ import {
   Rating,
   Stack,
   Snackbar,
-  Alert
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
@@ -31,6 +32,7 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 
 const ReviewsPage = () => {
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [currentReview, setCurrentReview] = useState(null);
   const [formData, setFormData] = useState({
@@ -45,26 +47,29 @@ const ReviewsPage = () => {
     severity: 'success'
   });
 
-  const showSnackbar = useCallback((message, severity = 'success') => {
-    setSnackbar({ open: true, message, severity });
-  }, []);
-
   const fetchReviews = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/reviews');
-      setReviews(response.data);
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:5000/api/reviews', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setReviews(response.data.data);
     } catch (error) {
-      console.error('Error fetching reviews:', error);
       showSnackbar('Error fetching reviews', 'error');
+    } finally {
+      setLoading(false);
     }
-  }, [showSnackbar]);
+  }, []);
 
   useEffect(() => {
     fetchReviews();
   }, [fetchReviews]);
 
-  const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
   };
 
   const handleOpen = (review = null) => {
@@ -110,24 +115,46 @@ const ReviewsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const token = localStorage.getItem('token');
       if (currentReview) {
-        await axios.patch(`http://localhost:5000/api/reviews/${currentReview}`, formData);
+        await axios.patch(
+          `http://localhost:5000/api/reviews/${currentReview}`,
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
         showSnackbar('Review updated successfully');
       } else {
-        await axios.post('http://localhost:5000/api/reviews', formData);
+        await axios.post(
+          'http://localhost:5000/api/reviews',
+          formData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
         showSnackbar('Review added successfully');
       }
       fetchReviews();
       handleClose();
     } catch (error) {
       console.error('Error saving review:', error);
-      showSnackbar('Error saving review', 'error');
+      showSnackbar(error.response?.data?.error || 'Error saving review', 'error');
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/reviews/${id}`);
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:5000/api/reviews/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
       fetchReviews();
       showSnackbar('Review deleted successfully');
     } catch (error) {
@@ -152,52 +179,66 @@ const ReviewsPage = () => {
         </Button>
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <StyledTableCell>S.No</StyledTableCell>
-              <StyledTableCell>App Name</StyledTableCell>
-              <StyledTableCell>Feedback</StyledTableCell>
-              <StyledTableCell>Rating</StyledTableCell>
-              <StyledTableCell>Recommendations</StyledTableCell>
-              <StyledTableCell>Actions</StyledTableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {reviews.map((review, index) => (
-              <TableRow key={review._id}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{review.appName}</TableCell>
-                <TableCell>{review.feedback}</TableCell>
-                <TableCell>
-                  <Rating value={review.rating} readOnly />
-                </TableCell>
-                <TableCell>{review.recommendations}</TableCell>
-                <TableCell>
-                  <Button
-                    size="small"
-                    color="primary"
-                    startIcon={<Edit />}
-                    onClick={() => handleOpen(review)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    color="error"
-                    startIcon={<Delete />}
-                    onClick={() => handleDelete(review._id)}
-                    sx={{ ml: 1 }}
-                  >
-                    Delete
-                  </Button>
-                </TableCell>
+      {loading ? (
+        <Box display="flex" justifyContent="center" my={4}>
+          <CircularProgress size={60} />
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <StyledTableCell>#</StyledTableCell>
+                <StyledTableCell>App Name</StyledTableCell>
+                <StyledTableCell>Feedback</StyledTableCell>
+                <StyledTableCell>Rating</StyledTableCell>
+                <StyledTableCell>Recommendations</StyledTableCell>
+                <StyledTableCell>Actions</StyledTableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {reviews.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    No reviews found
+                  </TableCell>
+                </TableRow>
+              ) : (
+                reviews.map((review, index) => (
+                  <TableRow key={review._id}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{review.appName}</TableCell>
+                    <TableCell>{review.feedback}</TableCell>
+                    <TableCell>
+                      <Rating value={review.rating} readOnly />
+                    </TableCell>
+                    <TableCell>{review.recommendations || '-'}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="small"
+                        color="primary"
+                        startIcon={<Edit />}
+                        onClick={() => handleOpen(review)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        size="small"
+                        color="error"
+                        startIcon={<Delete />}
+                        onClick={() => handleDelete(review._id)}
+                        sx={{ ml: 1 }}
+                      >
+                        Delete
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
         <DialogTitle>{currentReview ? 'Edit Review' : 'Add New Review'}</DialogTitle>
@@ -236,7 +277,7 @@ const ReviewsPage = () => {
               fullWidth
               multiline
               rows={3}
-              label="Recommendations"
+              label="Recommendations (Optional)"
               name="recommendations"
               value={formData.recommendations}
               onChange={handleChange}
@@ -245,7 +286,7 @@ const ReviewsPage = () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} color="primary">
+          <Button onClick={handleSubmit} color="primary" variant="contained">
             {currentReview ? 'Update' : 'Add'}
           </Button>
         </DialogActions>
@@ -254,10 +295,14 @@ const ReviewsPage = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
-        onClose={handleCloseSnackbar}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} onClose={handleCloseSnackbar} sx={{ width: '100%' }}>
+        <Alert 
+          severity={snackbar.severity} 
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          sx={{ width: '100%' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
