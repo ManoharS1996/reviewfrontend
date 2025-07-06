@@ -106,23 +106,25 @@ const UpdatesPage = () => {
   };
 
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>
-        App Updates
-      </Typography>
-      <Button
-        variant="contained"
-        color="primary"
-        startIcon={<Add />}
-        onClick={() => handleOpen()}
-        sx={{ marginBottom: 2 }}
-      >
-        Add Update
-      </Button>
-      <TableContainer component={Paper}>
+    <Container maxWidth="lg">
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
+          App Updates
+        </Typography>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Add />}
+          onClick={() => handleOpen()}
+          sx={{ borderRadius: '8px' }}
+        >
+          Add Update
+        </Button>
+      </Box>
+      <TableContainer component={Paper} sx={{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
         <Table>
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
               <StyledTableCell>App Name</StyledTableCell>
               <StyledTableCell>Features Added</StyledTableCell>
               <StyledTableCell>Start Date</StyledTableCell>
@@ -132,7 +134,7 @@ const UpdatesPage = () => {
           </TableHead>
           <TableBody>
             {updates.map((update) => (
-              <TableRow key={update._id}>
+              <TableRow key={update._id} hover>
                 <TableCell>{update.appName}</TableCell>
                 <TableCell>{update.featuresAdded}</TableCell>
                 <TableCell>{format(new Date(update.startDate), 'yyyy-MM-dd')}</TableCell>
@@ -141,7 +143,7 @@ const UpdatesPage = () => {
                   <Button
                     startIcon={<Edit />}
                     onClick={() => handleOpen(update)}
-                    sx={{ marginRight: 1 }}
+                    sx={{ marginRight: 1, borderRadius: '8px' }}
                   >
                     Edit
                   </Button>
@@ -149,6 +151,7 @@ const UpdatesPage = () => {
                     color="error"
                     startIcon={<Delete />}
                     onClick={() => handleDelete(update._id)}
+                    sx={{ borderRadius: '8px' }}
                   >
                     Delete
                   </Button>
@@ -159,8 +162,10 @@ const UpdatesPage = () => {
         </Table>
       </TableContainer>
 
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{currentUpdate ? 'Edit Update' : 'Add Update'}</DialogTitle>
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white' }}>
+          {currentUpdate ? 'Edit Update' : 'Add Update'}
+        </DialogTitle>
         <DialogContent>
           <Box display="flex" flexDirection="column" gap={2} mt={1}>
             <TextField
@@ -200,8 +205,12 @@ const UpdatesPage = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>
+          <Button onClick={handleClose} sx={{ borderRadius: '8px' }}>Cancel</Button>
+          <Button 
+            variant="contained" 
+            onClick={handleSubmit}
+            sx={{ borderRadius: '8px' }}
+          >
             {currentUpdate ? 'Update' : 'Add'}
           </Button>
         </DialogActions>

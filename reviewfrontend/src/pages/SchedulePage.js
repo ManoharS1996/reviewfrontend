@@ -32,15 +32,42 @@ import { Add, Edit, Delete, Notifications, AccessTime } from '@mui/icons-materia
 import api from '../api';
 
 const timeSlots = [
-  '00:00-01:00', '01:00-02:00', '02:00-03:00', '03:00-04:00', 
-  '04:00-05:00', '05:00-06:00', '06:00-07:00', '07:00-08:00',
-  '08:00-09:00', '09:00-10:00', '10:00-11:00', '11:00-12:00',
-  '12:00-13:00', '13:00-14:00', '14:00-15:00', '15:00-16:00',
-  '16:00-17:00', '17:00-18:00', '18:00-19:00', '19:00-20:00',
-  '20:00-21:00', '21:00-22:00', '22:00-23:00', '23:00-00:00',
-  '00:00-02:00', '02:00-04:00', '04:00-06:00', '06:00-08:00',
-  '08:00-10:00', '10:00-12:00', '12:00-14:00', '14:00-16:00',
-  '16:00-18:00', '18:00-20:00', '20:00-22:00', '22:00-00:00'
+  { value: '00:00-01:00', label: '1 hour (00:00-01:00)' },
+  { value: '01:00-02:00', label: '1 hour (01:00-02:00)' },
+  { value: '02:00-03:00', label: '1 hour (02:00-03:00)' },
+  { value: '03:00-04:00', label: '1 hour (03:00-04:00)' },
+  { value: '04:00-05:00', label: '1 hour (04:00-05:00)' },
+  { value: '05:00-06:00', label: '1 hour (05:00-06:00)' },
+  { value: '06:00-07:00', label: '1 hour (06:00-07:00)' },
+  { value: '07:00-08:00', label: '1 hour (07:00-08:00)' },
+  { value: '08:00-09:00', label: '1 hour (08:00-09:00)' },
+  { value: '09:00-10:00', label: '1 hour (09:00-10:00)' },
+  { value: '10:00-11:00', label: '1 hour (10:00-11:00)' },
+  { value: '11:00-12:00', label: '1 hour (11:00-12:00)' },
+  { value: '12:00-13:00', label: '1 hour (12:00-13:00)' },
+  { value: '13:00-14:00', label: '1 hour (13:00-14:00)' },
+  { value: '14:00-15:00', label: '1 hour (14:00-15:00)' },
+  { value: '15:00-16:00', label: '1 hour (15:00-16:00)' },
+  { value: '16:00-17:00', label: '1 hour (16:00-17:00)' },
+  { value: '17:00-18:00', label: '1 hour (17:00-18:00)' },
+  { value: '18:00-19:00', label: '1 hour (18:00-19:00)' },
+  { value: '19:00-20:00', label: '1 hour (19:00-20:00)' },
+  { value: '20:00-21:00', label: '1 hour (20:00-21:00)' },
+  { value: '21:00-22:00', label: '1 hour (21:00-22:00)' },
+  { value: '22:00-23:00', label: '1 hour (22:00-23:00)' },
+  { value: '23:00-00:00', label: '1 hour (23:00-00:00)' },
+  { value: '00:00-02:00', label: '2 hours (00:00-02:00)' },
+  { value: '02:00-04:00', label: '2 hours (02:00-04:00)' },
+  { value: '04:00-06:00', label: '2 hours (04:00-06:00)' },
+  { value: '06:00-08:00', label: '2 hours (06:00-08:00)' },
+  { value: '08:00-10:00', label: '2 hours (08:00-10:00)' },
+  { value: '10:00-12:00', label: '2 hours (10:00-12:00)' },
+  { value: '12:00-14:00', label: '2 hours (12:00-14:00)' },
+  { value: '14:00-16:00', label: '2 hours (14:00-16:00)' },
+  { value: '16:00-18:00', label: '2 hours (16:00-18:00)' },
+  { value: '18:00-20:00', label: '2 hours (18:00-20:00)' },
+  { value: '20:00-22:00', label: '2 hours (20:00-22:00)' },
+  { value: '22:00-00:00', label: '2 hours (22:00-00:00)' }
 ];
 
 const statusOptions = ['Scheduled', 'In Progress', 'Completed', 'Failed'];
@@ -75,7 +102,7 @@ const SchedulePage = () => {
   const [formData, setFormData] = useState({
     appName: '',
     deploymentDate: format(new Date(), 'yyyy-MM-dd'),
-    timeSlot: timeSlots[0],
+    timeSlot: timeSlots[0].value,
     status: 'Scheduled',
     developers: [],
     notes: ''
@@ -126,7 +153,7 @@ const SchedulePage = () => {
       setFormData({
         appName: '',
         deploymentDate: format(new Date(), 'yyyy-MM-dd'),
-        timeSlot: timeSlots[0],
+        timeSlot: timeSlots[0].value,
         status: 'Scheduled',
         developers: [],
         notes: ''
@@ -194,13 +221,14 @@ const SchedulePage = () => {
 
   const handleStatusChange = async () => {
     try {
-      await api.patch(
+      const response = await api.patch(
         `/schedules/${statusDialog.scheduleId}`,
         {
           status: statusDialog.status,
           failureReason: statusDialog.status === 'Failed' ? statusDialog.failureReason : undefined
         }
       );
+      
       showSnackbar(`Status updated to ${statusDialog.status}`, 'success');
       fetchSchedules();
       setStatusDialog(prev => ({ ...prev, open: false }));
@@ -221,7 +249,7 @@ const SchedulePage = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
           Deployment Schedule
         </Typography>
         <Button
@@ -229,6 +257,7 @@ const SchedulePage = () => {
           color="primary"
           startIcon={<Add />}
           onClick={() => handleOpenForm()}
+          sx={{ borderRadius: '8px' }}
         >
           New Schedule
         </Button>
@@ -239,17 +268,17 @@ const SchedulePage = () => {
           <CircularProgress size={60} />
         </Box>
       ) : (
-        <TableContainer component={Paper}>
+        <TableContainer component={Paper} sx={{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
           <Table>
             <TableHead>
-              <TableRow>
-                <TableCell>#</TableCell>
-                <TableCell>App Name</TableCell>
-                <TableCell>Deployment Date</TableCell>
-                <TableCell>Time Slot</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Developers</TableCell>
-                <TableCell>Actions</TableCell>
+              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>App Name</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Deployment Date</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Time Slot</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Developers</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -261,12 +290,12 @@ const SchedulePage = () => {
                 </TableRow>
               ) : (
                 schedules.map((schedule, index) => (
-                  <TableRow key={schedule._id}>
+                  <TableRow key={schedule._id} hover>
                     <TableCell>{index + 1}</TableCell>
                     <TableCell>{schedule.appName}</TableCell>
                     <TableCell>
                       {format(parseISO(schedule.deploymentDate), 'MMM dd, yyyy')}
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', color: '#666' }}>
                         <AccessTime fontSize="small" sx={{ mr: 0.5 }} />
                         {schedule.timeSlot}
                       </Box>
@@ -277,6 +306,14 @@ const SchedulePage = () => {
                         <Select
                           value={schedule.status}
                           onChange={(e) => handleOpenStatusDialog(schedule._id, e.target.value)}
+                          sx={{
+                            backgroundColor: `${statusColors[schedule.status]}.light`,
+                            color: 'white',
+                            borderRadius: '8px',
+                            '& .MuiSelect-select': {
+                              padding: '8px 16px'
+                            }
+                          }}
                         >
                           {statusOptions.map((status) => (
                             <MenuItem 
@@ -292,7 +329,17 @@ const SchedulePage = () => {
                     </TableCell>
                     <TableCell>
                       {schedule.developers.map((dev, i) => (
-                        <Chip key={i} label={dev} size="small" sx={{ mr: 1, mb: 1 }} />
+                        <Chip 
+                          key={i} 
+                          label={dev} 
+                          size="small" 
+                          sx={{ 
+                            mr: 1, 
+                            mb: 1,
+                            backgroundColor: '#e3f2fd',
+                            color: '#1976d2'
+                          }} 
+                        />
                       ))}
                     </TableCell>
                     <TableCell>
@@ -302,6 +349,7 @@ const SchedulePage = () => {
                           variant="outlined"
                           startIcon={<Edit />}
                           onClick={() => handleOpenForm(schedule)}
+                          sx={{ borderRadius: '8px' }}
                         >
                           Edit
                         </Button>
@@ -311,6 +359,7 @@ const SchedulePage = () => {
                           color="error"
                           startIcon={<Delete />}
                           onClick={() => handleDelete(schedule._id)}
+                          sx={{ borderRadius: '8px' }}
                         >
                           Delete
                         </Button>
@@ -318,6 +367,12 @@ const SchedulePage = () => {
                           <IconButton
                             color="primary"
                             onClick={() => handleResendNotification(schedule._id)}
+                            sx={{ 
+                              backgroundColor: '#e3f2fd',
+                              '&:hover': {
+                                backgroundColor: '#bbdefb'
+                              }
+                            }}
                           >
                             <Notifications />
                           </IconButton>
@@ -334,7 +389,9 @@ const SchedulePage = () => {
 
       {/* Schedule Form Dialog */}
       <Dialog open={openForm} onClose={handleCloseForm} fullWidth maxWidth="sm">
-        <DialogTitle>{currentSchedule ? 'Edit Schedule' : 'Create New Schedule'}</DialogTitle>
+        <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white' }}>
+          {currentSchedule ? 'Edit Schedule' : 'Create New Schedule'}
+        </DialogTitle>
         <DialogContent>
           <Box component="form" sx={{ mt: 2 }}>
             <TextField
@@ -345,6 +402,7 @@ const SchedulePage = () => {
               name="appName"
               value={formData.appName}
               onChange={handleFormChange}
+              sx={{ mb: 2 }}
             />
             <TextField
               margin="normal"
@@ -356,8 +414,9 @@ const SchedulePage = () => {
               InputLabelProps={{ shrink: true }}
               value={formData.deploymentDate}
               onChange={handleFormChange}
+              sx={{ mb: 2 }}
             />
-            <FormControl fullWidth margin="normal">
+            <FormControl fullWidth margin="normal" sx={{ mb: 2 }}>
               <InputLabel>Time Slot</InputLabel>
               <Select
                 name="timeSlot"
@@ -366,7 +425,7 @@ const SchedulePage = () => {
                 label="Time Slot"
               >
                 {timeSlots.map(slot => (
-                  <MenuItem key={slot} value={slot}>{slot}</MenuItem>
+                  <MenuItem key={slot.value} value={slot.value}>{slot.label}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -379,6 +438,7 @@ const SchedulePage = () => {
               name="notes"
               value={formData.notes}
               onChange={handleFormChange}
+              sx={{ mb: 2 }}
             />
             <FormControl fullWidth margin="normal">
               <InputLabel>Developers</InputLabel>
@@ -398,8 +458,13 @@ const SchedulePage = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseForm}>Cancel</Button>
-          <Button onClick={handleSubmit} color="primary" variant="contained">
+          <Button onClick={handleCloseForm} sx={{ borderRadius: '8px' }}>Cancel</Button>
+          <Button 
+            onClick={handleSubmit} 
+            color="primary" 
+            variant="contained"
+            sx={{ borderRadius: '8px' }}
+          >
             {currentSchedule ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
@@ -407,8 +472,10 @@ const SchedulePage = () => {
 
       {/* Status Change Dialog */}
       <Dialog open={statusDialog.open} onClose={handleCloseStatusDialog}>
-        <DialogTitle>Update Deployment Status</DialogTitle>
-        <DialogContent>
+        <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white' }}>
+          Update Deployment Status
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
           <FormControl fullWidth margin="normal">
             <InputLabel>Status</InputLabel>
             <Select
@@ -436,12 +503,13 @@ const SchedulePage = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseStatusDialog}>Cancel</Button>
+          <Button onClick={handleCloseStatusDialog} sx={{ borderRadius: '8px' }}>Cancel</Button>
           <Button 
             onClick={handleStatusChange} 
             color="primary" 
             variant="contained"
             disabled={statusDialog.status === 'Failed' && !statusDialog.failureReason}
+            sx={{ borderRadius: '8px' }}
           >
             Update
           </Button>
@@ -454,7 +522,11 @@ const SchedulePage = () => {
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity} 
+          sx={{ width: '100%', borderRadius: '8px' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

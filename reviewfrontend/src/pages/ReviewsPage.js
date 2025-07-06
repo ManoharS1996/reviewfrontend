@@ -139,7 +139,7 @@ const ReviewsPage = () => {
   return (
     <Container maxWidth="lg">
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
           Deployment Reviews
         </Typography>
         <Button
@@ -147,120 +147,102 @@ const ReviewsPage = () => {
           color="primary"
           startIcon={<Add />}
           onClick={() => handleOpen()}
+          sx={{ borderRadius: '8px' }}
         >
           Add Review
         </Button>
       </Box>
 
       {loading ? (
-        <Box display="flex" justifyContent="center" my={4}>
-          <CircularProgress size={60} />
+        <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
+          <CircularProgress />
         </Box>
       ) : (
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <StyledTableCell>#</StyledTableCell>
                 <StyledTableCell>App Name</StyledTableCell>
                 <StyledTableCell>Feedback</StyledTableCell>
-                <StyledTableCell>Rating</StyledTableCell>
                 <StyledTableCell>Recommendations</StyledTableCell>
+                <StyledTableCell>Rating</StyledTableCell>
                 <StyledTableCell>Actions</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {reviews.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} align="center">
-                    No reviews found
+              {reviews.map((review) => (
+                <TableRow key={review._id}>
+                  <TableCell>{review.appName}</TableCell>
+                  <TableCell>{review.feedback}</TableCell>
+                  <TableCell>{review.recommendations}</TableCell>
+                  <TableCell>
+                    <Rating value={review.rating} readOnly />
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Button color="primary" onClick={() => handleOpen(review)}>
+                        <Edit />
+                      </Button>
+                      <Button color="error" onClick={() => handleDelete(review._id)}>
+                        <Delete />
+                      </Button>
+                    </Stack>
                   </TableCell>
                 </TableRow>
-              ) : (
-                reviews.map((review, index) => (
-                  <TableRow key={review._id}>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{review.appName}</TableCell>
-                    <TableCell>{review.feedback}</TableCell>
-                    <TableCell>
-                      <Rating value={review.rating} readOnly />
-                    </TableCell>
-                    <TableCell>{review.recommendations || '-'}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="small"
-                        color="primary"
-                        startIcon={<Edit />}
-                        onClick={() => handleOpen(review)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="small"
-                        color="error"
-                        startIcon={<Delete />}
-                        onClick={() => handleDelete(review._id)}
-                        sx={{ ml: 1 }}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+              ))}
             </TableBody>
           </Table>
         </TableContainer>
       )}
 
-      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
-        <DialogTitle>{currentReview ? 'Edit Review' : 'Add New Review'}</DialogTitle>
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>{currentReview ? 'Edit Review' : 'Add Review'}</DialogTitle>
         <DialogContent>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
             <TextField
-              margin="normal"
-              required
               fullWidth
               label="App Name"
               name="appName"
               value={formData.appName}
               onChange={handleChange}
-            />
-            <TextField
               margin="normal"
               required
+            />
+            <TextField
               fullWidth
-              multiline
-              rows={4}
               label="Feedback"
               name="feedback"
               value={formData.feedback}
               onChange={handleChange}
+              margin="normal"
+              multiline
+              rows={3}
+              required
             />
-            <Stack direction="row" alignItems="center" spacing={2} sx={{ mt: 2 }}>
-              <Typography component="legend">Rating</Typography>
+            <TextField
+              fullWidth
+              label="Recommendations"
+              name="recommendations"
+              value={formData.recommendations}
+              onChange={handleChange}
+              margin="normal"
+              multiline
+              rows={2}
+            />
+            <Box sx={{ mt: 2 }}>
+              <Typography gutterBottom>Rating</Typography>
               <Rating
                 name="rating"
                 value={formData.rating}
                 onChange={handleRatingChange}
               />
-            </Stack>
-            <TextField
-              margin="normal"
-              fullWidth
-              multiline
-              rows={3}
-              label="Recommendations (Optional)"
-              name="recommendations"
-              value={formData.recommendations}
-              onChange={handleChange}
-            />
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} color="primary" variant="contained">
-            {currentReview ? 'Update' : 'Add'}
+          <Button variant="contained" onClick={handleSubmit}>
+            {currentReview ? 'Update' : 'Submit'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -268,13 +250,13 @@ const ReviewsPage = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert 
-          severity={snackbar.severity} 
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        <Alert
+          severity={snackbar.severity}
           sx={{ width: '100%' }}
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
         >
           {snackbar.message}
         </Alert>

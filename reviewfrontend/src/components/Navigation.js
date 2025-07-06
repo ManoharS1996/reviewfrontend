@@ -8,6 +8,7 @@ const StyledNavLink = styled(NavLink)(({ theme }) => ({
   color: 'inherit',
   '&.active button': {
     backgroundColor: theme.palette.action.selected,
+    fontWeight: 'bold',
   },
 }));
 
