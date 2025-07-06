@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { format, parseISO } from 'date-fns';
-import { 
-  Container, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  Typography, 
+import { format } from 'date-fns';
+import {
+  Container,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Typography,
   Button,
   Dialog,
   DialogTitle,
@@ -21,6 +20,7 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import api from '../api';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -34,7 +34,7 @@ const UpdatesPage = () => {
     appName: '',
     featuresAdded: '',
     startDate: format(new Date(), 'yyyy-MM-dd'),
-    endDate: format(new Date(), 'yyyy-MM-dd')
+    endDate: format(new Date(), 'yyyy-MM-dd'),
   });
 
   useEffect(() => {
@@ -43,29 +43,28 @@ const UpdatesPage = () => {
 
   const fetchUpdates = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/updates');
-      setUpdates(response.data);
+      const response = await api.get('/updates');
+      setUpdates(response.data.data);
     } catch (error) {
-      console.error('Error fetching updates:', error);
+      console.error('Failed to fetch updates:', error);
     }
   };
 
   const handleOpen = (update = null) => {
+    setCurrentUpdate(update);
     if (update) {
-      setCurrentUpdate(update._id);
       setFormData({
         appName: update.appName,
         featuresAdded: update.featuresAdded,
-        startDate: format(parseISO(update.startDate), 'yyyy-MM-dd'),
-        endDate: format(parseISO(update.endDate), 'yyyy-MM-dd')
+        startDate: update.startDate,
+        endDate: update.endDate,
       });
     } else {
-      setCurrentUpdate(null);
       setFormData({
         appName: '',
         featuresAdded: '',
         startDate: format(new Date(), 'yyyy-MM-dd'),
-        endDate: format(new Date(), 'yyyy-MM-dd')
+        endDate: format(new Date(), 'yyyy-MM-dd'),
       });
     }
     setOpen(true);
@@ -73,61 +72,57 @@ const UpdatesPage = () => {
 
   const handleClose = () => {
     setOpen(false);
+    setCurrentUpdate(null);
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [e.target.name]: e.target.value,
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     try {
       if (currentUpdate) {
-        await axios.patch(`http://localhost:5000/api/updates/${currentUpdate}`, formData);
+        await api.put(`/updates/${currentUpdate._id}`, formData);
       } else {
-        await axios.post('http://localhost:5000/api/updates', formData);
+        await api.post('/updates', formData);
       }
       fetchUpdates();
       handleClose();
     } catch (error) {
-      console.error('Error saving update:', error);
+      console.error('Failed to save update:', error);
     }
   };
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/updates/${id}`);
+      await api.delete(`/updates/${id}`);
       fetchUpdates();
     } catch (error) {
-      console.error('Error deleting update:', error);
+      console.error('Failed to delete update:', error);
     }
   };
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1">
-          Developer Updates
-        </Typography>
-        <Button 
-          variant="contained" 
-          color="primary" 
-          startIcon={<Add />}
-          onClick={() => handleOpen()}
-        >
-          Add Update
-        </Button>
-      </Box>
-
+    <Container>
+      <Typography variant="h4" gutterBottom>
+        App Updates
+      </Typography>
+      <Button
+        variant="contained"
+        color="primary"
+        startIcon={<Add />}
+        onClick={() => handleOpen()}
+        sx={{ marginBottom: 2 }}
+      >
+        Add Update
+      </Button>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <StyledTableCell>S.No</StyledTableCell>
               <StyledTableCell>App Name</StyledTableCell>
               <StyledTableCell>Features Added</StyledTableCell>
               <StyledTableCell>Start Date</StyledTableCell>
@@ -136,28 +131,24 @@ const UpdatesPage = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {updates.map((update, index) => (
+            {updates.map((update) => (
               <TableRow key={update._id}>
-                <TableCell>{index + 1}</TableCell>
                 <TableCell>{update.appName}</TableCell>
                 <TableCell>{update.featuresAdded}</TableCell>
-                <TableCell>{format(parseISO(update.startDate), 'MMM dd, yyyy')}</TableCell>
-                <TableCell>{format(parseISO(update.endDate), 'MMM dd, yyyy')}</TableCell>
+                <TableCell>{format(new Date(update.startDate), 'yyyy-MM-dd')}</TableCell>
+                <TableCell>{format(new Date(update.endDate), 'yyyy-MM-dd')}</TableCell>
                 <TableCell>
-                  <Button 
-                    size="small" 
-                    color="primary"
+                  <Button
                     startIcon={<Edit />}
                     onClick={() => handleOpen(update)}
+                    sx={{ marginRight: 1 }}
                   >
                     Edit
                   </Button>
-                  <Button 
-                    size="small" 
+                  <Button
                     color="error"
                     startIcon={<Delete />}
                     onClick={() => handleDelete(update._id)}
-                    sx={{ ml: 1 }}
                   >
                     Delete
                   </Button>
@@ -169,56 +160,48 @@ const UpdatesPage = () => {
       </TableContainer>
 
       <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{currentUpdate ? 'Edit Update' : 'Add New Update'}</DialogTitle>
+        <DialogTitle>{currentUpdate ? 'Edit Update' : 'Add Update'}</DialogTitle>
         <DialogContent>
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          <Box display="flex" flexDirection="column" gap={2} mt={1}>
             <TextField
-              margin="normal"
-              required
-              fullWidth
               label="App Name"
               name="appName"
               value={formData.appName}
               onChange={handleChange}
+              fullWidth
             />
             <TextField
-              margin="normal"
-              required
-              fullWidth
-              multiline
-              rows={3}
               label="Features Added"
               name="featuresAdded"
               value={formData.featuresAdded}
               onChange={handleChange}
+              fullWidth
+              multiline
+              rows={3}
             />
             <TextField
-              margin="normal"
-              required
-              fullWidth
               label="Start Date"
               type="date"
               name="startDate"
-              InputLabelProps={{ shrink: true }}
               value={formData.startDate}
               onChange={handleChange}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
             />
             <TextField
-              margin="normal"
-              required
-              fullWidth
               label="End Date"
               type="date"
               name="endDate"
-              InputLabelProps={{ shrink: true }}
               value={formData.endDate}
               onChange={handleChange}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
             />
           </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
-          <Button onClick={handleSubmit} color="primary">
+          <Button variant="contained" onClick={handleSubmit}>
             {currentUpdate ? 'Update' : 'Add'}
           </Button>
         </DialogActions>

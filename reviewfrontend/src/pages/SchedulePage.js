@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { format, parseISO } from 'date-fns';
 import {
   Container,
@@ -30,6 +29,7 @@ import {
   Tooltip
 } from '@mui/material';
 import { Add, Edit, Delete, Notifications, AccessTime } from '@mui/icons-material';
+import api from '../api';
 
 const timeSlots = [
   '00:00-01:00', '01:00-02:00', '02:00-03:00', '03:00-04:00', 
@@ -89,12 +89,7 @@ const SchedulePage = () => {
   const fetchSchedules = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const { data } = await axios.get('http://localhost:5000/api/schedules', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const { data } = await api.get('/schedules');
       setSchedules(data.data);
     } catch (error) {
       showSnackbar('Error loading schedules', 'error');
@@ -155,33 +150,16 @@ const SchedulePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
       const data = {
         ...formData,
         timings: formData.timeSlot
       };
 
       if (currentSchedule) {
-        await axios.patch(
-          `http://localhost:5000/api/schedules/${currentSchedule}`,
-          data,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
+        await api.patch(`/schedules/${currentSchedule}`, data);
         showSnackbar('Schedule updated successfully!', 'success');
       } else {
-        await axios.post(
-          'http://localhost:5000/api/schedules',
-          data,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
+        await api.post('/schedules', data);
         showSnackbar('Schedule created successfully!', 'success');
       }
       fetchSchedules();
@@ -193,12 +171,7 @@ const SchedulePage = () => {
 
   const handleDelete = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/schedules/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      await api.delete(`/schedules/${id}`);
       showSnackbar('Schedule deleted successfully!', 'success');
       fetchSchedules();
     } catch (error) {
@@ -221,17 +194,11 @@ const SchedulePage = () => {
 
   const handleStatusChange = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(
-        `http://localhost:5000/api/schedules/${statusDialog.scheduleId}`,
+      await api.patch(
+        `/schedules/${statusDialog.scheduleId}`,
         {
           status: statusDialog.status,
           failureReason: statusDialog.status === 'Failed' ? statusDialog.failureReason : undefined
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
         }
       );
       showSnackbar(`Status updated to ${statusDialog.status}`, 'success');
@@ -244,16 +211,7 @@ const SchedulePage = () => {
 
   const handleResendNotification = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.post(
-        `http://localhost:5000/api/schedules/${id}/notify`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      await api.post(`/schedules/${id}/notify`, {});
       showSnackbar('Notification resent successfully!', 'success');
     } catch (error) {
       showSnackbar('Error resending notification', 'error');

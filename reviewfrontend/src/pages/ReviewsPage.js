@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import {
   Container,
   Table,
@@ -25,6 +24,7 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
+import api from '../api';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontWeight: 'bold',
@@ -50,12 +50,7 @@ const ReviewsPage = () => {
   const fetchReviews = useCallback(async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/reviews', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await api.get('/reviews');
       setReviews(response.data.data);
     } catch (error) {
       showSnackbar('Error fetching reviews', 'error');
@@ -115,28 +110,11 @@ const ReviewsPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
       if (currentReview) {
-        await axios.patch(
-          `http://localhost:5000/api/reviews/${currentReview}`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
+        await api.patch(`/reviews/${currentReview}`, formData);
         showSnackbar('Review updated successfully');
       } else {
-        await axios.post(
-          'http://localhost:5000/api/reviews',
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
+        await api.post('/reviews', formData);
         showSnackbar('Review added successfully');
       }
       fetchReviews();
@@ -149,12 +127,7 @@ const ReviewsPage = () => {
 
   const handleDelete = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/reviews/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      await api.delete(`/reviews/${id}`);
       fetchReviews();
       showSnackbar('Review deleted successfully');
     } catch (error) {
