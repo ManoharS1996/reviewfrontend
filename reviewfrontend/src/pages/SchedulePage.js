@@ -30,7 +30,6 @@ import {
 } from '@mui/material';
 import { Add, Edit, Delete, Notifications, AccessTime } from '@mui/icons-material';
 import api from '../api';
-
 const timeSlots = [
   { value: '00:00-01:00', label: '1 hour (00:00-01:00)' },
   { value: '01:00-02:00', label: '1 hour (01:00-02:00)' },
@@ -80,12 +79,12 @@ const statusColors = {
 
 const developerEmails = [
   'manojkumar.chandanada@nowitservices.com',
-  'sivakumar.erugu@nowitservices.com',
-  'kartheek.muppiri@nowitservices.com',
+  'manohar.srungaram@nowitservices.com',
   'sandhya.chattu@nowitservices.com',
+  'kartheek.muppiri@nowitservices.com',
+  'sivakumar.erugu@nowitservices.com',
   'sriram.k@nowitservices.com',
-  'praveen.kournopo@nowitservices.com',
-  'manohar.srungaram@nowitservices.com'
+  'praveen.kournopo@nowitservices.com'
 ];
 
 const SchedulePage = () => {
@@ -229,19 +228,29 @@ const SchedulePage = () => {
         }
       );
       
-      showSnackbar(`Status updated to ${statusDialog.status}`, 'success');
-      fetchSchedules();
-      setStatusDialog(prev => ({ ...prev, open: false }));
+      if (response.data.success) {
+        showSnackbar(`Status updated to ${statusDialog.status} and notifications sent`, 'success');
+        fetchSchedules();
+        setStatusDialog(prev => ({ ...prev, open: false }));
+      } else {
+        showSnackbar('Failed to update status', 'error');
+      }
     } catch (error) {
-      showSnackbar('Error updating status', 'error');
+      console.error('Status update error:', error);
+      showSnackbar(error.response?.data?.message || 'Error updating status', 'error');
     }
   };
 
   const handleResendNotification = async (id) => {
     try {
-      await api.post(`/schedules/${id}/notify`, {});
-      showSnackbar('Notification resent successfully!', 'success');
+      const response = await api.post(`/schedules/${id}/notify`, {});
+      if (response.data.success) {
+        showSnackbar('Notification resent successfully!', 'success');
+      } else {
+        showSnackbar('Failed to resend notification', 'error');
+      }
     } catch (error) {
+      console.error('Resend notification error:', error);
       showSnackbar('Error resending notification', 'error');
     }
   };
@@ -363,7 +372,7 @@ const SchedulePage = () => {
                         >
                           Delete
                         </Button>
-                        <Tooltip title="Resend notification">
+                        <Tooltip title="Resend notification to all developers">
                           <IconButton
                             color="primary"
                             onClick={() => handleResendNotification(schedule._id)}
@@ -387,7 +396,6 @@ const SchedulePage = () => {
         </TableContainer>
       )}
 
-      {/* Schedule Form Dialog */}
       <Dialog open={openForm} onClose={handleCloseForm} fullWidth maxWidth="sm">
         <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white' }}>
           {currentSchedule ? 'Edit Schedule' : 'Create New Schedule'}
@@ -470,7 +478,6 @@ const SchedulePage = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Status Change Dialog */}
       <Dialog open={statusDialog.open} onClose={handleCloseStatusDialog}>
         <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white' }}>
           Update Deployment Status
@@ -511,7 +518,7 @@ const SchedulePage = () => {
             disabled={statusDialog.status === 'Failed' && !statusDialog.failureReason}
             sx={{ borderRadius: '8px' }}
           >
-            Update
+            Update Status
           </Button>
         </DialogActions>
       </Dialog>
