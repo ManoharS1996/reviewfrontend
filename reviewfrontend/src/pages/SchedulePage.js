@@ -26,48 +26,116 @@ import {
   FormControl,
   InputLabel,
   IconButton,
-  Tooltip
+  Tooltip,
+  Menu,
+  ListItemIcon,
+  ListItemText,
+  LinearProgress,
+  Zoom
 } from '@mui/material';
 import { Add, Edit, Delete, Notifications, AccessTime } from '@mui/icons-material';
+import { styled, keyframes } from '@mui/system';
 import api from '../api';
-const timeSlots = [
-  { value: '00:00-01:00', label: '1 hour (00:00-01:00)' },
-  { value: '01:00-02:00', label: '1 hour (01:00-02:00)' },
-  { value: '02:00-03:00', label: '1 hour (02:00-03:00)' },
-  { value: '03:00-04:00', label: '1 hour (03:00-04:00)' },
-  { value: '04:00-05:00', label: '1 hour (04:00-05:00)' },
-  { value: '05:00-06:00', label: '1 hour (05:00-06:00)' },
-  { value: '06:00-07:00', label: '1 hour (06:00-07:00)' },
-  { value: '07:00-08:00', label: '1 hour (07:00-08:00)' },
-  { value: '08:00-09:00', label: '1 hour (08:00-09:00)' },
-  { value: '09:00-10:00', label: '1 hour (09:00-10:00)' },
-  { value: '10:00-11:00', label: '1 hour (10:00-11:00)' },
-  { value: '11:00-12:00', label: '1 hour (11:00-12:00)' },
-  { value: '12:00-13:00', label: '1 hour (12:00-13:00)' },
-  { value: '13:00-14:00', label: '1 hour (13:00-14:00)' },
-  { value: '14:00-15:00', label: '1 hour (14:00-15:00)' },
-  { value: '15:00-16:00', label: '1 hour (15:00-16:00)' },
-  { value: '16:00-17:00', label: '1 hour (16:00-17:00)' },
-  { value: '17:00-18:00', label: '1 hour (17:00-18:00)' },
-  { value: '18:00-19:00', label: '1 hour (18:00-19:00)' },
-  { value: '19:00-20:00', label: '1 hour (19:00-20:00)' },
-  { value: '20:00-21:00', label: '1 hour (20:00-21:00)' },
-  { value: '21:00-22:00', label: '1 hour (21:00-22:00)' },
-  { value: '22:00-23:00', label: '1 hour (22:00-23:00)' },
-  { value: '23:00-00:00', label: '1 hour (23:00-00:00)' },
-  { value: '00:00-02:00', label: '2 hours (00:00-02:00)' },
-  { value: '02:00-04:00', label: '2 hours (02:00-04:00)' },
-  { value: '04:00-06:00', label: '2 hours (04:00-06:00)' },
-  { value: '06:00-08:00', label: '2 hours (06:00-08:00)' },
-  { value: '08:00-10:00', label: '2 hours (08:00-10:00)' },
-  { value: '10:00-12:00', label: '2 hours (10:00-12:00)' },
-  { value: '12:00-14:00', label: '2 hours (12:00-14:00)' },
-  { value: '14:00-16:00', label: '2 hours (14:00-16:00)' },
-  { value: '16:00-18:00', label: '2 hours (16:00-18:00)' },
-  { value: '18:00-20:00', label: '2 hours (18:00-20:00)' },
-  { value: '20:00-22:00', label: '2 hours (20:00-22:00)' },
-  { value: '22:00-00:00', label: '2 hours (22:00-00:00)' }
-];
+
+// Custom animations
+const pulse = keyframes`
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+`;
+
+const floating = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+`;
+
+const gradient = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
+
+// Styled components
+const PulseButton = styled(Button)({
+  animation: `${pulse} 2s infinite`,
+});
+
+const FloatingBox = styled(Box)({
+  animation: `${floating} 3s ease-in-out infinite`,
+});
+
+const AnimatedGradientBox = styled(Box)(({ theme }) => ({
+  background: 'linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab)',
+  backgroundSize: '400% 400%',
+  animation: `${gradient} 15s ease infinite`,
+  borderRadius: '16px',
+  padding: '2rem',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+}));
+
+const GlowCircularProgress = styled(CircularProgress)(({ theme }) => ({
+  '& circle': {
+    strokeLinecap: 'round',
+    stroke: theme.palette.primary.main,
+    filter: 'drop-shadow(0 0 8px rgba(25, 118, 210, 0.6))',
+  },
+}));
+
+const GradientLinearProgress = styled(LinearProgress)(({ theme }) => ({
+  height: 10,
+  borderRadius: 5,
+  background: 'linear-gradient(to right, #1976d2, #4facfe)',
+  '& .MuiLinearProgress-bar': {
+    borderRadius: 5,
+    background: 'linear-gradient(to right, #4facfe, #00f2fe)',
+    animation: `${gradient} 3s ease infinite`,
+  },
+}));
+
+// Time slot configuration
+const timeSlotGroups = {
+  '1-hour': [
+    { value: '00:00-01:00', label: '00:00-01:00', emoji: '🕛' },
+    { value: '01:00-02:00', label: '01:00-02:00', emoji: '🕐' },
+    { value: '02:00-03:00', label: '02:00-03:00', emoji: '🕑' },
+    { value: '03:00-04:00', label: '03:00-04:00', emoji: '🕒' },
+    { value: '04:00-05:00', label: '04:00-05:00', emoji: '🕓' },
+    { value: '05:00-06:00', label: '05:00-06:00', emoji: '🕔' },
+    { value: '06:00-07:00', label: '06:00-07:00', emoji: '🕕' },
+    { value: '07:00-08:00', label: '07:00-08:00', emoji: '🕖' },
+    { value: '08:00-09:00', label: '08:00-09:00', emoji: '🕗' },
+    { value: '09:00-10:00', label: '09:00-10:00', emoji: '🕘' },
+    { value: '10:00-11:00', label: '10:00-11:00', emoji: '🕙' },
+    { value: '11:00-12:00', label: '11:00-12:00', emoji: '🕚' },
+    { value: '12:00-13:00', label: '12:00-13:00', emoji: '🕛' },
+    { value: '13:00-14:00', label: '13:00-14:00', emoji: '🕐' },
+    { value: '14:00-15:00', label: '14:00-15:00', emoji: '🕑' },
+    { value: '15:00-16:00', label: '15:00-16:00', emoji: '🕒' },
+    { value: '16:00-17:00', label: '16:00-17:00', emoji: '🕓' },
+    { value: '17:00-18:00', label: '17:00-18:00', emoji: '🕔' },
+    { value: '18:00-19:00', label: '18:00-19:00', emoji: '🕕' },
+    { value: '19:00-20:00', label: '19:00-20:00', emoji: '🕖' },
+    { value: '20:00-21:00', label: '20:00-21:00', emoji: '🕗' },
+    { value: '21:00-22:00', label: '21:00-22:00', emoji: '🕘' },
+    { value: '22:00-23:00', label: '22:00-23:00', emoji: '🕙' },
+    { value: '23:00-00:00', label: '23:00-00:00', emoji: '🕚' }
+  ],
+  '2-hour': [
+    { value: '00:00-02:00', label: '00:00-02:00', emoji: '🕛' },
+    { value: '02:00-04:00', label: '02:00-04:00', emoji: '🕑' },
+    { value: '04:00-06:00', label: '04:00-06:00', emoji: '🕓' },
+    { value: '06:00-08:00', label: '06:00-08:00', emoji: '🕕' },
+    { value: '08:00-10:00', label: '08:00-10:00', emoji: '🕗' },
+    { value: '10:00-12:00', label: '10:00-12:00', emoji: '🕙' },
+    { value: '12:00-14:00', label: '12:00-14:00', emoji: '🕛' },
+    { value: '14:00-16:00', label: '14:00-16:00', emoji: '🕑' },
+    { value: '16:00-18:00', label: '16:00-18:00', emoji: '🕓' },
+    { value: '18:00-20:00', label: '18:00-20:00', emoji: '🕕' },
+    { value: '20:00-22:00', label: '20:00-22:00', emoji: '🕗' },
+    { value: '22:00-00:00', label: '22:00-00:00', emoji: '🕙' }
+  ]
+};
 
 const statusOptions = ['Scheduled', 'In Progress', 'Completed', 'Failed'];
 const statusColors = {
@@ -84,12 +152,14 @@ const developerEmails = [
   'kartheek.muppiri@nowitservices.com',
   'sivakumar.erugu@nowitservices.com',
   'sriram.k@nowitservices.com',
-  'praveen.kournopo@nowitservices.com'
+  'praveen.kournopo@nowitservices.com',
+  'manumanoharmega@gmail.com'
 ];
 
 const SchedulePage = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
   const [openForm, setOpenForm] = useState(false);
   const [statusDialog, setStatusDialog] = useState({
     open: false,
@@ -101,7 +171,7 @@ const SchedulePage = () => {
   const [formData, setFormData] = useState({
     appName: '',
     deploymentDate: format(new Date(), 'yyyy-MM-dd'),
-    timeSlot: timeSlots[0].value,
+    timeSlot: timeSlotGroups['1-hour'][0].value,
     status: 'Scheduled',
     developers: [],
     notes: ''
@@ -111,11 +181,17 @@ const SchedulePage = () => {
     message: '',
     severity: 'success'
   });
+  const [timeSlotMenu, setTimeSlotMenu] = useState({
+    anchorEl: null,
+    selectedGroup: '1-hour'
+  });
 
   const fetchSchedules = useCallback(async () => {
     try {
       setLoading(true);
       const { data } = await api.get('/schedules');
+      // Simulate network delay for demo purposes
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setSchedules(data.data);
     } catch (error) {
       showSnackbar('Error loading schedules', 'error');
@@ -152,7 +228,7 @@ const SchedulePage = () => {
       setFormData({
         appName: '',
         deploymentDate: format(new Date(), 'yyyy-MM-dd'),
-        timeSlot: timeSlots[0].value,
+        timeSlot: timeSlotGroups['1-hour'][0].value,
         status: 'Scheduled',
         developers: [],
         notes: ''
@@ -176,6 +252,7 @@ const SchedulePage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setUpdating(true);
       const data = {
         ...formData,
         timings: formData.timeSlot
@@ -183,34 +260,40 @@ const SchedulePage = () => {
 
       if (currentSchedule) {
         await api.patch(`/schedules/${currentSchedule}`, data);
-        showSnackbar('Schedule updated successfully!', 'success');
+        showSnackbar('Schedule updated successfully! Notifications sent to developers.', 'success');
       } else {
         await api.post('/schedules', data);
-        showSnackbar('Schedule created successfully!', 'success');
+        showSnackbar('Schedule created successfully! Notifications sent to developers.', 'success');
       }
-      fetchSchedules();
+      await fetchSchedules();
       setOpenForm(false);
     } catch (error) {
       showSnackbar(error.response?.data?.error || 'Error saving schedule', 'error');
+    } finally {
+      setUpdating(false);
     }
   };
 
   const handleDelete = async (id) => {
     try {
+      setUpdating(true);
       await api.delete(`/schedules/${id}`);
       showSnackbar('Schedule deleted successfully!', 'success');
-      fetchSchedules();
+      await fetchSchedules();
     } catch (error) {
       showSnackbar('Error deleting schedule', 'error');
+    } finally {
+      setUpdating(false);
     }
   };
 
   const handleOpenStatusDialog = (scheduleId, status) => {
+    const schedule = schedules.find(s => s._id === scheduleId);
     setStatusDialog({
       open: true,
       scheduleId,
       status,
-      failureReason: ''
+      failureReason: schedule?.failureReason || ''
     });
   };
 
@@ -220,6 +303,7 @@ const SchedulePage = () => {
 
   const handleStatusChange = async () => {
     try {
+      setUpdating(true);
       const response = await api.patch(
         `/schedules/${statusDialog.scheduleId}`,
         {
@@ -229,8 +313,8 @@ const SchedulePage = () => {
       );
       
       if (response.data.success) {
-        showSnackbar(`Status updated to ${statusDialog.status} and notifications sent`, 'success');
-        fetchSchedules();
+        showSnackbar(`Status updated to ${statusDialog.status} and notifications sent to developers`, 'success');
+        await fetchSchedules();
         setStatusDialog(prev => ({ ...prev, open: false }));
       } else {
         showSnackbar('Failed to update status', 'error');
@@ -238,22 +322,127 @@ const SchedulePage = () => {
     } catch (error) {
       console.error('Status update error:', error);
       showSnackbar(error.response?.data?.message || 'Error updating status', 'error');
+    } finally {
+      setUpdating(false);
     }
   };
 
   const handleResendNotification = async (id) => {
     try {
+      setUpdating(true);
       const response = await api.post(`/schedules/${id}/notify`, {});
       if (response.data.success) {
-        showSnackbar('Notification resent successfully!', 'success');
+        showSnackbar('Notification resent successfully to all developers!', 'success');
       } else {
         showSnackbar('Failed to resend notification', 'error');
       }
     } catch (error) {
       console.error('Resend notification error:', error);
       showSnackbar('Error resending notification', 'error');
+    } finally {
+      setUpdating(false);
     }
   };
+
+  const handleTimeSlotMenuOpen = (event) => {
+    setTimeSlotMenu({ anchorEl: event.currentTarget, selectedGroup: '1-hour' });
+  };
+
+  const handleTimeSlotMenuClose = () => {
+    setTimeSlotMenu(prev => ({ ...prev, anchorEl: null }));
+  };
+
+  const handleTimeSlotGroupSelect = (group) => {
+    setTimeSlotMenu(prev => ({ ...prev, selectedGroup: group }));
+  };
+
+  const handleTimeSlotSelect = (value) => {
+    setFormData(prev => ({ ...prev, timeSlot: value }));
+    handleTimeSlotMenuClose();
+  };
+
+  const getEmojiForTimeSlot = (timeSlot) => {
+    const allSlots = [...timeSlotGroups['1-hour'], ...timeSlotGroups['2-hour']];
+    const slot = allSlots.find(s => s.value === timeSlot);
+    return slot ? slot.emoji : '🕒';
+  };
+
+  // Enhanced loader component
+  const LoadingAnimation = () => (
+    <FloatingBox
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '400px',
+        width: '100%',
+      }}
+    >
+      <AnimatedGradientBox
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '80%',
+          maxWidth: '500px',
+          textAlign: 'center',
+          color: 'white',
+        }}
+      >
+        <Box
+          sx={{
+            position: 'relative',
+            width: '120px',
+            height: '120px',
+            mb: 3,
+          }}
+        >
+          <GlowCircularProgress
+            size={120}
+            thickness={2}
+            sx={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+            }}
+          />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              textAlign: 'center',
+            }}
+          >
+            <Typography
+              variant="h4"
+              component="div"
+              sx={{
+                fontWeight: 'bold',
+                color: 'white',
+                textShadow: '0 0 10px rgba(255,255,255,0.5)',
+              }}
+            >
+              {Math.floor((schedules.length / 10) * 100)}%
+            </Typography>
+          </Box>
+        </Box>
+        <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
+          Loading Deployment Schedules
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 3 }}>
+          Fetching the latest deployment information...
+        </Typography>
+        <GradientLinearProgress sx={{ width: '100%', height: '8px' }} />
+        <Typography variant="caption" sx={{ mt: 2, display: 'block' }}>
+          {schedules.length} schedules loaded
+        </Typography>
+      </AnimatedGradientBox>
+    </FloatingBox>
+  );
 
   return (
     <Container maxWidth="lg">
@@ -261,139 +450,170 @@ const SchedulePage = () => {
         <Typography variant="h4" component="h1" sx={{ fontWeight: 'bold', color: '#1976d2' }}>
           Deployment Schedule
         </Typography>
-        <Button
+        <PulseButton
           variant="contained"
           color="primary"
           startIcon={<Add />}
           onClick={() => handleOpenForm()}
           sx={{ borderRadius: '8px' }}
+          disabled={updating || loading}
         >
-          New Schedule
-        </Button>
+          {updating ? <CircularProgress size={24} color="inherit" /> : 'New Schedule'}
+        </PulseButton>
       </Box>
 
       {loading ? (
-        <Box display="flex" justifyContent="center" my={4}>
-          <CircularProgress size={60} />
-        </Box>
+        <LoadingAnimation />
       ) : (
-        <TableContainer component={Paper} sx={{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>App Name</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Deployment Date</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Time Slot</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Developers</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {schedules.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} align="center">
-                    No schedules found
-                  </TableCell>
+        <Zoom in={!loading} timeout={500}>
+          <TableContainer 
+            component={Paper} 
+            sx={{ 
+              borderRadius: '12px', 
+              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+              position: 'relative'
+            }}
+          >
+            {updating && (
+              <LinearProgress 
+                sx={{ 
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 6,
+                  zIndex: 1
+                }} 
+              />
+            )}
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                  <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>App Name</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Deployment Date</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Time Slot</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Developers</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
                 </TableRow>
-              ) : (
-                schedules.map((schedule, index) => (
-                  <TableRow key={schedule._id} hover>
-                    <TableCell>{index + 1}</TableCell>
-                    <TableCell>{schedule.appName}</TableCell>
-                    <TableCell>
-                      {format(parseISO(schedule.deploymentDate), 'MMM dd, yyyy')}
-                      <Box sx={{ display: 'flex', alignItems: 'center', color: '#666' }}>
-                        <AccessTime fontSize="small" sx={{ mr: 0.5 }} />
-                        {schedule.timeSlot}
-                      </Box>
-                    </TableCell>
-                    <TableCell>{schedule.timeSlot}</TableCell>
-                    <TableCell>
-                      <FormControl fullWidth size="small">
-                        <Select
-                          value={schedule.status}
-                          onChange={(e) => handleOpenStatusDialog(schedule._id, e.target.value)}
-                          sx={{
-                            backgroundColor: `${statusColors[schedule.status]}.light`,
-                            color: 'white',
-                            borderRadius: '8px',
-                            '& .MuiSelect-select': {
-                              padding: '8px 16px'
-                            }
-                          }}
-                        >
-                          {statusOptions.map((status) => (
-                            <MenuItem 
-                              key={status} 
-                              value={status}
-                              sx={{ backgroundColor: `${statusColors[status]}.light`, color: 'white' }}
-                            >
-                              {status}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-                    <TableCell>
-                      {schedule.developers.map((dev, i) => (
-                        <Chip 
-                          key={i} 
-                          label={dev} 
-                          size="small" 
-                          sx={{ 
-                            mr: 1, 
-                            mb: 1,
-                            backgroundColor: '#e3f2fd',
-                            color: '#1976d2'
-                          }} 
-                        />
-                      ))}
-                    </TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<Edit />}
-                          onClick={() => handleOpenForm(schedule)}
-                          sx={{ borderRadius: '8px' }}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          color="error"
-                          startIcon={<Delete />}
-                          onClick={() => handleDelete(schedule._id)}
-                          sx={{ borderRadius: '8px' }}
-                        >
-                          Delete
-                        </Button>
-                        <Tooltip title="Resend notification to all developers">
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleResendNotification(schedule._id)}
-                            sx={{ 
-                              backgroundColor: '#e3f2fd',
-                              '&:hover': {
-                                backgroundColor: '#bbdefb'
-                              }
-                            }}
-                          >
-                            <Notifications />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
+              </TableHead>
+              <TableBody>
+                {schedules.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      No schedules found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+                ) : (
+                  schedules.map((schedule, index) => (
+                    <TableRow key={schedule._id} hover>
+                      <TableCell>{index + 1}</TableCell>
+                      <TableCell>{schedule.appName}</TableCell>
+                      <TableCell>
+                        {format(parseISO(schedule.deploymentDate), 'MMM dd, yyyy')}
+                        <Box sx={{ display: 'flex', alignItems: 'center', color: '#666' }}>
+                          <AccessTime fontSize="small" sx={{ mr: 0.5 }} />
+                          {schedule.timeSlot}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Typography variant="body1" sx={{ mr: 1, fontSize: '1.2rem' }}>
+                            {getEmojiForTimeSlot(schedule.timeSlot)}
+                          </Typography>
+                          {schedule.timeSlot}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <FormControl fullWidth size="small">
+                          <Select
+                            value={schedule.status}
+                            onChange={(e) => handleOpenStatusDialog(schedule._id, e.target.value)}
+                            sx={{
+                              backgroundColor: `${statusColors[schedule.status]}.light`,
+                              color: 'white',
+                              borderRadius: '8px',
+                              '& .MuiSelect-select': {
+                                padding: '8px 16px'
+                              }
+                            }}
+                            disabled={updating}
+                          >
+                            {statusOptions.map((status) => (
+                              <MenuItem 
+                                key={status} 
+                                value={status}
+                                sx={{ backgroundColor: `${statusColors[status]}.light`, color: 'white' }}
+                              >
+                                {status}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </TableCell>
+                      <TableCell>
+                        {schedule.developers.map((dev, i) => (
+                          <Chip 
+                            key={i} 
+                            label={dev} 
+                            size="small" 
+                            sx={{ 
+                              mr: 1, 
+                              mb: 1,
+                              backgroundColor: '#e3f2fd',
+                              color: '#1976d2'
+                            }} 
+                          />
+                        ))}
+                      </TableCell>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            startIcon={<Edit />}
+                            onClick={() => handleOpenForm(schedule)}
+                            sx={{ borderRadius: '8px' }}
+                            disabled={updating}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            startIcon={<Delete />}
+                            onClick={() => handleDelete(schedule._id)}
+                            sx={{ borderRadius: '8px' }}
+                            disabled={updating}
+                          >
+                            Delete
+                          </Button>
+                          <Tooltip title="Resend notification to all developers">
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleResendNotification(schedule._id)}
+                              sx={{ 
+                                backgroundColor: '#e3f2fd',
+                                '&:hover': {
+                                  backgroundColor: '#bbdefb'
+                                }
+                              }}
+                              disabled={updating}
+                            >
+                              {updating ? <CircularProgress size={24} /> : <Notifications />}
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Zoom>
       )}
 
       <Dialog open={openForm} onClose={handleCloseForm} fullWidth maxWidth="sm">
@@ -411,6 +631,7 @@ const SchedulePage = () => {
               value={formData.appName}
               onChange={handleFormChange}
               sx={{ mb: 2 }}
+              disabled={updating}
             />
             <TextField
               margin="normal"
@@ -423,19 +644,77 @@ const SchedulePage = () => {
               value={formData.deploymentDate}
               onChange={handleFormChange}
               sx={{ mb: 2 }}
+              disabled={updating}
             />
             <FormControl fullWidth margin="normal" sx={{ mb: 2 }}>
               <InputLabel>Time Slot</InputLabel>
-              <Select
-                name="timeSlot"
-                value={formData.timeSlot}
-                onChange={handleFormChange}
-                label="Time Slot"
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <TextField
+                  fullWidth
+                  value={formData.timeSlot}
+                  InputProps={{
+                    readOnly: true,
+                    startAdornment: (
+                      <IconButton 
+                        onClick={handleTimeSlotMenuOpen}
+                        sx={{ mr: 1 }}
+                        disabled={updating}
+                      >
+                        <Typography variant="body1" sx={{ fontSize: '1.2rem' }}>
+                          {getEmojiForTimeSlot(formData.timeSlot)}
+                        </Typography>
+                      </IconButton>
+                    )
+                  }}
+                  disabled={updating}
+                />
+              </Box>
+              <Menu
+                anchorEl={timeSlotMenu.anchorEl}
+                open={Boolean(timeSlotMenu.anchorEl)}
+                onClose={handleTimeSlotMenuClose}
+                MenuListProps={{
+                  'aria-labelledby': 'time-slot-menu',
+                }}
               >
-                {timeSlots.map(slot => (
-                  <MenuItem key={slot.value} value={slot.value}>{slot.label}</MenuItem>
+                <Box sx={{ display: 'flex', borderBottom: '1px solid #eee' }}>
+                  <Button 
+                    onClick={() => handleTimeSlotGroupSelect('1-hour')}
+                    sx={{ 
+                      flex: 1, 
+                      fontWeight: timeSlotMenu.selectedGroup === '1-hour' ? 'bold' : 'normal',
+                      color: timeSlotMenu.selectedGroup === '1-hour' ? '#1976d2' : 'inherit'
+                    }}
+                  >
+                    1-hour slots
+                  </Button>
+                  <Button 
+                    onClick={() => handleTimeSlotGroupSelect('2-hour')}
+                    sx={{ 
+                      flex: 1, 
+                      fontWeight: timeSlotMenu.selectedGroup === '2-hour' ? 'bold' : 'normal',
+                      color: timeSlotMenu.selectedGroup === '2-hour' ? '#1976d2' : 'inherit'
+                    }}
+                  >
+                    2-hour slots
+                  </Button>
+                </Box>
+                {timeSlotGroups[timeSlotMenu.selectedGroup].map((slot) => (
+                  <MenuItem 
+                    key={slot.value} 
+                    onClick={() => handleTimeSlotSelect(slot.value)}
+                    selected={formData.timeSlot === slot.value}
+                    disabled={updating}
+                  >
+                    <ListItemIcon>
+                      <Typography variant="body1" sx={{ fontSize: '1.2rem' }}>
+                        {slot.emoji}
+                      </Typography>
+                    </ListItemIcon>
+                    <ListItemText primary={slot.label} />
+                  </MenuItem>
                 ))}
-              </Select>
+              </Menu>
             </FormControl>
             <TextField
               margin="normal"
@@ -447,6 +726,7 @@ const SchedulePage = () => {
               value={formData.notes}
               onChange={handleFormChange}
               sx={{ mb: 2 }}
+              disabled={updating}
             />
             <FormControl fullWidth margin="normal">
               <InputLabel>Developers</InputLabel>
@@ -457,6 +737,7 @@ const SchedulePage = () => {
                 onChange={handleFormChange}
                 label="Developers"
                 renderValue={(selected) => selected.join(', ')}
+                disabled={updating}
               >
                 {developerEmails.map((email) => (
                   <MenuItem key={email} value={email}>{email}</MenuItem>
@@ -466,14 +747,26 @@ const SchedulePage = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseForm} sx={{ borderRadius: '8px' }}>Cancel</Button>
+          <Button 
+            onClick={handleCloseForm} 
+            sx={{ borderRadius: '8px' }}
+            disabled={updating}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleSubmit} 
             color="primary" 
             variant="contained"
+            disabled={updating}
             sx={{ borderRadius: '8px' }}
           >
-            {currentSchedule ? 'Update' : 'Create'}
+            {updating ? (
+              <>
+                <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                {currentSchedule ? 'Updating...' : 'Creating...'}
+              </>
+            ) : currentSchedule ? 'Update' : 'Create'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -489,6 +782,7 @@ const SchedulePage = () => {
               value={statusDialog.status}
               onChange={(e) => setStatusDialog(prev => ({ ...prev, status: e.target.value }))}
               label="Status"
+              disabled={updating}
             >
               {statusOptions.map((status) => (
                 <MenuItem key={status} value={status}>{status}</MenuItem>
@@ -506,19 +800,31 @@ const SchedulePage = () => {
               value={statusDialog.failureReason}
               onChange={(e) => setStatusDialog(prev => ({ ...prev, failureReason: e.target.value }))}
               required
+              disabled={updating}
             />
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseStatusDialog} sx={{ borderRadius: '8px' }}>Cancel</Button>
+          <Button 
+            onClick={handleCloseStatusDialog} 
+            sx={{ borderRadius: '8px' }}
+            disabled={updating}
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleStatusChange} 
             color="primary" 
             variant="contained"
-            disabled={statusDialog.status === 'Failed' && !statusDialog.failureReason}
+            disabled={updating || (statusDialog.status === 'Failed' && !statusDialog.failureReason)}
             sx={{ borderRadius: '8px' }}
           >
-            Update Status
+            {updating ? (
+              <>
+                <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                Updating...
+              </>
+            ) : 'Update Status'}
           </Button>
         </DialogActions>
       </Dialog>
