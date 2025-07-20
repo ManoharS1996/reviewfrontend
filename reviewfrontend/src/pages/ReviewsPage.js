@@ -454,7 +454,7 @@ const ReviewsPage = () => {
                 value={formData.rating}
                 onChange={handleRatingChange}
                 size="large"
-                max={10}
+                max={5}
               />
             </Box>
           </Box>
