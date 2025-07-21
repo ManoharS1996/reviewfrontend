@@ -286,7 +286,7 @@ const ReviewsPage = () => {
     try {
       setUpdating(true);
       if (currentReview) {
-        await api.patch(`/reviews/${currentReview._id}`, formData);
+        await api.put(`/reviews/${currentReview._id}`, formData);
         showSnackbar('Review updated successfully');
       } else {
         await api.post('/reviews', formData);
