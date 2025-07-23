@@ -34,19 +34,35 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true)
       return { success: true }
     } catch (err) {
-      return { success: false, message: err.response?.data?.error || 'Login failed' }
+      console.error('Login Error:', err.response?.data)
+      return {
+        success: false,
+        message: err.response?.data?.error || 'Login failed'
+      }
     }
   }
 
   const register = async (fullName, username, password) => {
     try {
-      const res = await api.post('/auth/register', { fullName, username, password })
+      // ✅ Debug log to confirm payload
+      console.log('Register Payload:', { fullName, username, password })
+
+      const res = await api.post('/auth/register', {
+        fullName,
+        username,
+        password
+      })
+
       localStorage.setItem('token', res.data.token)
       setUser(res.data.user)
       setIsAuthenticated(true)
       return { success: true }
     } catch (err) {
-      return { success: false, message: err.response?.data?.error || 'Registration failed' }
+      console.error('Register Error:', err.response?.data)
+      return {
+        success: false,
+        message: err.response?.data?.error || 'Registration failed'
+      }
     }
   }
 

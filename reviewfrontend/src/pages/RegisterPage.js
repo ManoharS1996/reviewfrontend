@@ -20,14 +20,16 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const { fullName, username, password } = formData;
+
+    if (!fullName || !username || !password) {
+      toast.error('All fields are required');
+      return;
+    }
+
     setLoading(true);
-    
     try {
-      const result = await register(
-        formData.fullName,
-        formData.username,
-        formData.password
-      );
+      const result = await register(fullName, username, password);
       
       if (result.success) {
         toast.success('Registration successful!');
