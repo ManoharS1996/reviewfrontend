@@ -190,8 +190,6 @@ const SchedulePage = () => {
     try {
       setLoading(true);
       const { data } = await api.get('/schedules');
-      // Simulate network delay for demo purposes
-      await new Promise(resolve => setTimeout(resolve, 1000));
       setSchedules(data.data);
     } catch (error) {
       showSnackbar('Error loading schedules', 'error');
@@ -255,7 +253,7 @@ const SchedulePage = () => {
       setUpdating(true);
       const data = {
         ...formData,
-        timings: formData.timeSlot
+        deploymentDate: new Date(formData.deploymentDate).toISOString()
       };
 
       if (currentSchedule) {
@@ -320,7 +318,6 @@ const SchedulePage = () => {
         showSnackbar('Failed to update status', 'error');
       }
     } catch (error) {
-      console.error('Status update error:', error);
       showSnackbar(error.response?.data?.message || 'Error updating status', 'error');
     } finally {
       setUpdating(false);
@@ -337,7 +334,6 @@ const SchedulePage = () => {
         showSnackbar('Failed to resend notification', 'error');
       }
     } catch (error) {
-      console.error('Resend notification error:', error);
       showSnackbar('Error resending notification', 'error');
     } finally {
       setUpdating(false);
@@ -367,7 +363,6 @@ const SchedulePage = () => {
     return slot ? slot.emoji : '🕒';
   };
 
-  // Enhanced loader component
   const LoadingAnimation = () => (
     <FloatingBox
       sx={{
@@ -492,7 +487,7 @@ const SchedulePage = () => {
                   <TableCell sx={{ fontWeight: 'bold' }}>#</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>App Name</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Deployment Date</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Time Slot</TableCell>
+                  <TableCell sx={{ fontWeight: 'bold', width: '150px' }}>Time Slot</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Developers</TableCell>
                   <TableCell sx={{ fontWeight: 'bold' }}>Actions</TableCell>
@@ -517,12 +512,14 @@ const SchedulePage = () => {
                           {schedule.timeSlot}
                         </Box>
                       </TableCell>
-                      <TableCell>
+                      <TableCell sx={{ width: '150px' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                          <Typography variant="body1" sx={{ mr: 1, fontSize: '1.2rem' }}>
+                          <Typography variant="body1" sx={{ mr: 1, fontSize: '1.2rem', minWidth: '24px' }}>
                             {getEmojiForTimeSlot(schedule.timeSlot)}
                           </Typography>
-                          {schedule.timeSlot}
+                          <Typography variant="body2" noWrap>
+                            {schedule.timeSlot}
+                          </Typography>
                         </Box>
                       </TableCell>
                       <TableCell>
@@ -553,19 +550,22 @@ const SchedulePage = () => {
                         </FormControl>
                       </TableCell>
                       <TableCell>
-                        {schedule.developers.map((dev, i) => (
-                          <Chip 
-                            key={i} 
-                            label={dev} 
-                            size="small" 
-                            sx={{ 
-                              mr: 1, 
-                              mb: 1,
-                              backgroundColor: '#e3f2fd',
-                              color: '#1976d2'
-                            }} 
-                          />
-                        ))}
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {schedule.developers.map((dev, i) => (
+                            <Chip 
+                              key={i} 
+                              label={dev} 
+                              size="small" 
+                              sx={{ 
+                                backgroundColor: '#e3f2fd',
+                                color: '#1976d2',
+                                maxWidth: '150px',
+                                textOverflow: 'ellipsis',
+                                overflow: 'hidden'
+                              }} 
+                            />
+                          ))}
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -677,7 +677,7 @@ const SchedulePage = () => {
                   'aria-labelledby': 'time-slot-menu',
                 }}
               >
-                <Box sx={{ display: 'flex', borderBottom: '1px solid #eee' }}>
+                <Box sx={{ display: 'flex', borderBottom: '5px solid #eee' }}>
                   <Button 
                     onClick={() => handleTimeSlotGroupSelect('1-hour')}
                     sx={{ 
