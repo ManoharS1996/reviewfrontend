@@ -1,4 +1,3 @@
-// Updated SchedulePage.js with confirmation dialog and email verification
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
 import {
@@ -176,6 +175,15 @@ const SchedulePage = () => {
     sendingCode: false,
     verifying: false
   });
+  const [actionConfirmation, setActionConfirmation] = useState({
+    open: false,
+    action: null, // 'create' or 'update'
+    verificationCode: '',
+    userEnteredCode: '',
+    sendingCode: false,
+    verifying: false,
+    formData: null
+  });
   const [currentSchedule, setCurrentSchedule] = useState(null);
   const [formData, setFormData] = useState({
     appName: '',
@@ -258,47 +266,88 @@ const SchedulePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Prepare the data to be submitted
+    const data = {
+      ...formData,
+      deploymentDate: new Date(formData.deploymentDate).toISOString()
+    };
+
+    // Open confirmation dialog
+    setActionConfirmation({
+      open: true,
+      action: currentSchedule ? 'update' : 'create',
+      verificationCode: '',
+      userEnteredCode: '',
+      sendingCode: true,
+      verifying: false,
+      formData: data
+    });
+
+    // Generate and send verification code
     try {
-      setUpdating(true);
-      const data = {
-        ...formData,
-        deploymentDate: new Date(formData.deploymentDate).toISOString()
-      };
-
-      // Check if developers or time slot changed
-      const originalSchedule = currentSchedule ? schedules.find(s => s._id === currentSchedule) : null;
-      const developersChanged = originalSchedule && 
-        JSON.stringify(originalSchedule.developers) !== JSON.stringify(data.developers);
-      const timeSlotChanged = originalSchedule && 
-        originalSchedule.timeSlot !== data.timeSlot;
-
-      if (currentSchedule) {
-        await api.patch(`/schedules/${currentSchedule}`, data);
-        
-        // Send notification if developers or time slot changed
-        if (developersChanged || timeSlotChanged) {
-          try {
-            await api.post(`/schedules/${currentSchedule}/notify`);
-            showSnackbar('Schedule updated and notifications sent to developers!', 'success');
-          } catch (emailError) {
-            console.error('Email notification failed:', emailError);
-            showSnackbar('Schedule updated but notification failed', 'warning');
-          }
-        } else {
-          showSnackbar('Schedule updated successfully!', 'success');
-        }
-      } else {
-        await api.post('/schedules', data);
-        showSnackbar('Schedule created and notifications sent to developers!', 'success');
-      }
+      const response = await api.post('/auth/send-verification-code', {
+        emails: ['manohar.srungaram@nowitservices.com', 'manohar142652@gmail.com']
+      });
       
-      await fetchSchedules();
-      setOpenForm(false);
+      if (response.data.success) {
+        setActionConfirmation(prev => ({
+          ...prev,
+          verificationCode: response.data.code,
+          sendingCode: false
+        }));
+        showSnackbar('Verification code sent to your email', 'success');
+      } else {
+        showSnackbar('Failed to send verification code', 'error');
+        setActionConfirmation(prev => ({ ...prev, open: false, sendingCode: false }));
+      }
     } catch (error) {
-      showSnackbar(error.response?.data?.error || 'Error saving schedule', 'error');
-    } finally {
-      setUpdating(false);
+      showSnackbar('Error sending verification code', 'error');
+      setActionConfirmation(prev => ({ ...prev, open: false, sendingCode: false }));
     }
+  };
+
+  const handleActionConfirm = async () => {
+    if (actionConfirmation.userEnteredCode !== actionConfirmation.verificationCode) {
+      showSnackbar('Invalid verification code', 'error');
+      return;
+    }
+
+    try {
+      setActionConfirmation(prev => ({ ...prev, verifying: true }));
+      
+      const { action, formData } = actionConfirmation;
+      let response;
+
+      if (action === 'update') {
+        response = await api.patch(`/schedules/${currentSchedule}`, formData);
+      } else {
+        response = await api.post('/schedules', formData);
+      }
+
+      if (response.data.success) {
+        const message = action === 'update' 
+          ? 'Schedule updated successfully!' 
+          : 'Schedule created successfully!';
+        showSnackbar(message, 'success');
+        await fetchSchedules();
+        setOpenForm(false);
+      } else {
+        showSnackbar(response.data.error || 'Action failed', 'error');
+      }
+    } catch (error) {
+      showSnackbar(error.response?.data?.error || 'Error performing action', 'error');
+    } finally {
+      setActionConfirmation(prev => ({ ...prev, open: false, verifying: false }));
+    }
+  };
+
+  const handleActionCancel = () => {
+    setActionConfirmation(prev => ({ ...prev, open: false }));
+  };
+
+  const handleActionCodeChange = (e) => {
+    setActionConfirmation(prev => ({ ...prev, userEnteredCode: e.target.value }));
   };
 
   const handleDeleteClick = async (id) => {
@@ -852,6 +901,69 @@ const SchedulePage = () => {
                 {currentSchedule ? 'Updating...' : 'Creating...'}
               </>
             ) : currentSchedule ? 'Update' : 'Create'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Action Confirmation Dialog */}
+      <Dialog open={actionConfirmation.open} onClose={handleActionCancel}>
+        <DialogTitle sx={{ 
+          backgroundColor: actionConfirmation.action === 'create' ? '#4caf50' : '#1976d2',
+          color: 'white'
+        }}>
+          {actionConfirmation.action === 'create' ? 'Confirm Schedule Creation' : 'Confirm Schedule Update'}
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body1" gutterBottom>
+            {actionConfirmation.action === 'create' 
+              ? 'Are you sure you want to create this new schedule?' 
+              : 'Are you sure you want to update this schedule?'}
+          </Typography>
+          
+          {actionConfirmation.sendingCode ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
+              <CircularProgress size={24} />
+              <Typography variant="body2">
+                Sending verification code to your email...
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <Typography variant="body2" sx={{ mt: 2, mb: 1 }}>
+                A verification code has been sent to your email. Please enter it below:
+              </Typography>
+              <TextField
+                fullWidth
+                label="Verification Code"
+                value={actionConfirmation.userEnteredCode}
+                onChange={handleActionCodeChange}
+                disabled={actionConfirmation.verifying}
+                sx={{ mt: 1 }}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleActionCancel}
+            sx={{ borderRadius: '8px' }}
+            disabled={actionConfirmation.verifying}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleActionConfirm}
+            color={actionConfirmation.action === 'create' ? 'success' : 'primary'}
+            variant="contained"
+            disabled={actionConfirmation.verifying || !actionConfirmation.userEnteredCode}
+            sx={{ borderRadius: '8px' }}
+          >
+            {actionConfirmation.verifying ? (
+              <>
+                <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                Verifying...
+              </>
+            ) : actionConfirmation.action === 'create' ? 'Confirm Create' : 'Confirm Update'}
           </Button>
         </DialogActions>
       </Dialog>
