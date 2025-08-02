@@ -1,3 +1,4 @@
+// Updated SchedulePage.js with confirmation dialog and email verification
 import React, { useState, useEffect, useCallback } from 'react';
 import { format, parseISO } from 'date-fns';
 import {
@@ -167,6 +168,14 @@ const SchedulePage = () => {
     status: '',
     failureReason: ''
   });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    scheduleId: null,
+    verificationCode: '',
+    userEnteredCode: '',
+    sendingCode: false,
+    verifying: false
+  });
   const [currentSchedule, setCurrentSchedule] = useState(null);
   const [formData, setFormData] = useState({
     appName: '',
@@ -256,13 +265,33 @@ const SchedulePage = () => {
         deploymentDate: new Date(formData.deploymentDate).toISOString()
       };
 
+      // Check if developers or time slot changed
+      const originalSchedule = currentSchedule ? schedules.find(s => s._id === currentSchedule) : null;
+      const developersChanged = originalSchedule && 
+        JSON.stringify(originalSchedule.developers) !== JSON.stringify(data.developers);
+      const timeSlotChanged = originalSchedule && 
+        originalSchedule.timeSlot !== data.timeSlot;
+
       if (currentSchedule) {
         await api.patch(`/schedules/${currentSchedule}`, data);
-        showSnackbar('Schedule updated successfully! Notifications sent to developers.', 'success');
+        
+        // Send notification if developers or time slot changed
+        if (developersChanged || timeSlotChanged) {
+          try {
+            await api.post(`/schedules/${currentSchedule}/notify`);
+            showSnackbar('Schedule updated and notifications sent to developers!', 'success');
+          } catch (emailError) {
+            console.error('Email notification failed:', emailError);
+            showSnackbar('Schedule updated but notification failed', 'warning');
+          }
+        } else {
+          showSnackbar('Schedule updated successfully!', 'success');
+        }
       } else {
         await api.post('/schedules', data);
-        showSnackbar('Schedule created successfully! Notifications sent to developers.', 'success');
+        showSnackbar('Schedule created and notifications sent to developers!', 'success');
       }
+      
       await fetchSchedules();
       setOpenForm(false);
     } catch (error) {
@@ -272,17 +301,64 @@ const SchedulePage = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDeleteClick = async (id) => {
+    setDeleteDialog({
+      open: true,
+      scheduleId: id,
+      verificationCode: '',
+      userEnteredCode: '',
+      sendingCode: false,
+      verifying: false
+    });
+    
+    // Generate and send verification code
     try {
-      setUpdating(true);
-      await api.delete(`/schedules/${id}`);
+      setDeleteDialog(prev => ({ ...prev, sendingCode: true }));
+      const response = await api.post('/auth/send-verification-code', {
+        emails: ['manohar.srungaram@nowitservices.com', 'manohar142652@gmail.com']
+      });
+      
+      if (response.data.success) {
+        setDeleteDialog(prev => ({
+          ...prev,
+          verificationCode: response.data.code,
+          sendingCode: false
+        }));
+        showSnackbar('Verification code sent to your email', 'success');
+      } else {
+        showSnackbar('Failed to send verification code', 'error');
+        setDeleteDialog(prev => ({ ...prev, open: false, sendingCode: false }));
+      }
+    } catch (error) {
+      showSnackbar('Error sending verification code', 'error');
+      setDeleteDialog(prev => ({ ...prev, open: false, sendingCode: false }));
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteDialog.userEnteredCode !== deleteDialog.verificationCode) {
+      showSnackbar('Invalid verification code', 'error');
+      return;
+    }
+
+    try {
+      setDeleteDialog(prev => ({ ...prev, verifying: true }));
+      await api.delete(`/schedules/${deleteDialog.scheduleId}`);
       showSnackbar('Schedule deleted successfully!', 'success');
       await fetchSchedules();
+      setDeleteDialog(prev => ({ ...prev, open: false, verifying: false }));
     } catch (error) {
       showSnackbar('Error deleting schedule', 'error');
-    } finally {
-      setUpdating(false);
+      setDeleteDialog(prev => ({ ...prev, verifying: false }));
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog(prev => ({ ...prev, open: false }));
+  };
+
+  const handleDeleteCodeChange = (e) => {
+    setDeleteDialog(prev => ({ ...prev, userEnteredCode: e.target.value }));
   };
 
   const handleOpenStatusDialog = (scheduleId, status) => {
@@ -461,24 +537,24 @@ const SchedulePage = () => {
         <LoadingAnimation />
       ) : (
         <Zoom in={!loading} timeout={500}>
-          <TableContainer 
-            component={Paper} 
-            sx={{ 
-              borderRadius: '12px', 
+          <TableContainer
+            component={Paper}
+            sx={{
+              borderRadius: '12px',
               boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
               position: 'relative'
             }}
           >
             {updating && (
-              <LinearProgress 
-                sx={{ 
+              <LinearProgress
+                sx={{
                   position: 'absolute',
                   top: 0,
                   left: 0,
                   right: 0,
                   height: 6,
                   zIndex: 1
-                }} 
+                }}
               />
             )}
             <Table>
@@ -538,8 +614,8 @@ const SchedulePage = () => {
                             disabled={updating}
                           >
                             {statusOptions.map((status) => (
-                              <MenuItem 
-                                key={status} 
+                              <MenuItem
+                                key={status}
                                 value={status}
                                 sx={{ backgroundColor: `${statusColors[status]}.light`, color: 'white' }}
                               >
@@ -552,17 +628,17 @@ const SchedulePage = () => {
                       <TableCell>
                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
                           {schedule.developers.map((dev, i) => (
-                            <Chip 
-                              key={i} 
-                              label={dev} 
-                              size="small" 
-                              sx={{ 
+                            <Chip
+                              key={i}
+                              label={dev}
+                              size="small"
+                              sx={{
                                 backgroundColor: '#e3f2fd',
                                 color: '#1976d2',
                                 maxWidth: '150px',
                                 textOverflow: 'ellipsis',
                                 overflow: 'hidden'
-                              }} 
+                              }}
                             />
                           ))}
                         </Box>
@@ -584,7 +660,7 @@ const SchedulePage = () => {
                             variant="outlined"
                             color="error"
                             startIcon={<Delete />}
-                            onClick={() => handleDelete(schedule._id)}
+                            onClick={() => handleDeleteClick(schedule._id)}
                             sx={{ borderRadius: '8px' }}
                             disabled={updating}
                           >
@@ -594,7 +670,7 @@ const SchedulePage = () => {
                             <IconButton
                               color="primary"
                               onClick={() => handleResendNotification(schedule._id)}
-                              sx={{ 
+                              sx={{
                                 backgroundColor: '#e3f2fd',
                                 '&:hover': {
                                   backgroundColor: '#bbdefb'
@@ -616,6 +692,7 @@ const SchedulePage = () => {
         </Zoom>
       )}
 
+      {/* Schedule Form Dialog */}
       <Dialog open={openForm} onClose={handleCloseForm} fullWidth maxWidth="sm">
         <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white' }}>
           {currentSchedule ? 'Edit Schedule' : 'Create New Schedule'}
@@ -647,7 +724,15 @@ const SchedulePage = () => {
               disabled={updating}
             />
             <FormControl fullWidth margin="normal" sx={{ mb: 2 }}>
-              <InputLabel>Time Slot</InputLabel>
+              <label style={{
+                transform: 'translate(0.5rem, 50%)',
+                backgroundColor: '#FFFFFF',
+                zIndex: 1,
+                width: 'fit-content',
+                padding: '0 0.3rem',
+                fontSize: '0.875rem',
+                color: '#737575ff',
+              }}>Time Slot</label>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <TextField
                   fullWidth
@@ -655,7 +740,7 @@ const SchedulePage = () => {
                   InputProps={{
                     readOnly: true,
                     startAdornment: (
-                      <IconButton 
+                      <IconButton
                         onClick={handleTimeSlotMenuOpen}
                         sx={{ mr: 1 }}
                         disabled={updating}
@@ -678,20 +763,20 @@ const SchedulePage = () => {
                 }}
               >
                 <Box sx={{ display: 'flex', borderBottom: '5px solid #eee' }}>
-                  <Button 
+                  <Button
                     onClick={() => handleTimeSlotGroupSelect('1-hour')}
-                    sx={{ 
-                      flex: 1, 
+                    sx={{
+                      flex: 1,
                       fontWeight: timeSlotMenu.selectedGroup === '1-hour' ? 'bold' : 'normal',
                       color: timeSlotMenu.selectedGroup === '1-hour' ? '#1976d2' : 'inherit'
                     }}
                   >
                     1-hour slots
                   </Button>
-                  <Button 
+                  <Button
                     onClick={() => handleTimeSlotGroupSelect('2-hour')}
-                    sx={{ 
-                      flex: 1, 
+                    sx={{
+                      flex: 1,
                       fontWeight: timeSlotMenu.selectedGroup === '2-hour' ? 'bold' : 'normal',
                       color: timeSlotMenu.selectedGroup === '2-hour' ? '#1976d2' : 'inherit'
                     }}
@@ -700,8 +785,8 @@ const SchedulePage = () => {
                   </Button>
                 </Box>
                 {timeSlotGroups[timeSlotMenu.selectedGroup].map((slot) => (
-                  <MenuItem 
-                    key={slot.value} 
+                  <MenuItem
+                    key={slot.value}
                     onClick={() => handleTimeSlotSelect(slot.value)}
                     selected={formData.timeSlot === slot.value}
                     disabled={updating}
@@ -747,16 +832,16 @@ const SchedulePage = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={handleCloseForm} 
+          <Button
+            onClick={handleCloseForm}
             sx={{ borderRadius: '8px' }}
             disabled={updating}
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleSubmit} 
-            color="primary" 
+          <Button
+            onClick={handleSubmit}
+            color="primary"
             variant="contained"
             disabled={updating}
             sx={{ borderRadius: '8px' }}
@@ -771,6 +856,7 @@ const SchedulePage = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Status Update Dialog */}
       <Dialog open={statusDialog.open} onClose={handleCloseStatusDialog}>
         <DialogTitle sx={{ backgroundColor: '#1976d2', color: 'white' }}>
           Update Deployment Status
@@ -805,16 +891,16 @@ const SchedulePage = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={handleCloseStatusDialog} 
+          <Button
+            onClick={handleCloseStatusDialog}
             sx={{ borderRadius: '8px' }}
             disabled={updating}
           >
             Cancel
           </Button>
-          <Button 
-            onClick={handleStatusChange} 
-            color="primary" 
+          <Button
+            onClick={handleStatusChange}
+            color="primary"
             variant="contained"
             disabled={updating || (statusDialog.status === 'Failed' && !statusDialog.failureReason)}
             sx={{ borderRadius: '8px' }}
@@ -829,15 +915,73 @@ const SchedulePage = () => {
         </DialogActions>
       </Dialog>
 
+      {/* Delete Confirmation Dialog with Verification */}
+      <Dialog open={deleteDialog.open} onClose={handleDeleteCancel}>
+        <DialogTitle sx={{ backgroundColor: '#f44336', color: 'white' }}>
+          Confirm Deletion
+        </DialogTitle>
+        <DialogContent sx={{ mt: 2 }}>
+          <Typography variant="body1" gutterBottom>
+            Are you sure you want to delete this schedule? This action cannot be undone.
+          </Typography>
+          
+          {deleteDialog.sendingCode ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}>
+              <CircularProgress size={24} />
+              <Typography variant="body2">
+                Sending verification code to your email...
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <Typography variant="body2" sx={{ mt: 2, mb: 1 }}>
+                A verification code has been sent to your email. Please enter it below:
+              </Typography>
+              <TextField
+                fullWidth
+                label="Verification Code"
+                value={deleteDialog.userEnteredCode}
+                onChange={handleDeleteCodeChange}
+                disabled={deleteDialog.verifying}
+                sx={{ mt: 1 }}
+              />
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleDeleteCancel}
+            sx={{ borderRadius: '8px' }}
+            disabled={deleteDialog.verifying}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={deleteDialog.verifying || !deleteDialog.userEnteredCode}
+            sx={{ borderRadius: '8px' }}
+          >
+            {deleteDialog.verifying ? (
+              <>
+                <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                Verifying...
+              </>
+            ) : 'Confirm Delete'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
           sx={{ width: '100%', borderRadius: '8px' }}
         >
           {snackbar.message}
