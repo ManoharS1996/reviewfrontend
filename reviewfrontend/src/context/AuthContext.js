@@ -9,59 +9,69 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const token = localStorage.getItem('token')
-        if (token) {
-          const res = await api.get('/auth/me')
-          setUser(res.data.data)
-          setIsAuthenticated(true)
-        }
-      } catch (err) {
-        console.error('Auth check error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
     checkAuth()
   }, [])
 
+  const checkAuth = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (token) {
+        const response = await api.get('/auth/me')
+        if (response.data.success) {
+          setUser(response.data.user)
+          setIsAuthenticated(true)
+        }
+      }
+    } catch (error) {
+      console.error('Auth check error:', error)
+      localStorage.removeItem('token')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const login = async (username, password) => {
     try {
-      const res = await api.post('/auth/login', { username, password })
-      localStorage.setItem('token', res.data.token)
-      setUser(res.data.user)
-      setIsAuthenticated(true)
-      return { success: true }
-    } catch (err) {
-      console.error('Login Error:', err.response?.data)
+      const response = await api.post('/auth/login', { username, password })
+      
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.token)
+        setUser(response.data.user)
+        setIsAuthenticated(true)
+        return { success: true }
+      } else {
+        return { success: false, message: response.data.message }
+      }
+    } catch (error) {
+      console.error('Login Error:', error.response?.data)
       return {
         success: false,
-        message: err.response?.data?.error || 'Login failed'
+        message: error.response?.data?.message || 'Login failed. Please check your credentials.'
       }
     }
   }
 
   const register = async (fullName, username, password) => {
     try {
-      // ✅ Debug log to confirm payload
-      console.log('Register Payload:', { fullName, username, password })
-
-      const res = await api.post('/auth/register', {
+      const response = await api.post('/auth/register', {
         fullName,
         username,
         password
       })
 
-      localStorage.setItem('token', res.data.token)
-      setUser(res.data.user)
-      setIsAuthenticated(true)
-      return { success: true }
-    } catch (err) {
-      console.error('Register Error:', err.response?.data)
+      if (response.data.success) {
+        localStorage.setItem('token', response.data.token)
+        setUser(response.data.user)
+        setIsAuthenticated(true)
+        return { success: true }
+      } else {
+        return { success: false, message: response.data.message }
+      }
+    } catch (error) {
+      console.error('Register Error:', error.response?.data)
       return {
         success: false,
-        message: err.response?.data?.error || 'Registration failed'
+        message: error.response?.data?.message || 'Registration failed. Please try again.'
       }
     }
   }
@@ -69,11 +79,12 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await api.get('/auth/logout')
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
       localStorage.removeItem('token')
       setUser(null)
       setIsAuthenticated(false)
-    } catch (err) {
-      console.error('Logout error:', err)
     }
   }
 

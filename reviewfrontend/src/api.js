@@ -1,6 +1,9 @@
 import axios from 'axios';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL, // Ensure this matches your backend
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -14,5 +17,17 @@ api.interceptors.request.use(config => {
   }
   return config;
 });
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

@@ -1,10 +1,9 @@
-// Existing imports...
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Container, Box, Typography, TextField, Button,
-  InputAdornment, IconButton, Link, Divider, CircularProgress, Paper
+  InputAdornment, IconButton, Paper, CircularProgress
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { toast } from 'react-toastify';
@@ -36,9 +35,7 @@ export default function LoginPage() {
   return (
     <Box sx={{
       minHeight: '100vh',
-      backgroundImage: 'url(https://as1.ftcdn.net/v2/jpg/03/55/60/70/1000_F_355607062_zYMS8jaz4SfoykpWz5oViRVKL32IabTP.jpg)',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -49,7 +46,7 @@ export default function LoginPage() {
           p: 4,
           borderRadius: 4,
           backdropFilter: 'blur(8px)',
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
           boxShadow: '0 8px 32px rgba(31, 38, 135, 0.37)'
         }}>
           <Box textAlign="center" mb={4}>
@@ -74,6 +71,7 @@ export default function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
+              disabled={loading}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
@@ -89,6 +87,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              disabled={loading}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
@@ -98,7 +97,11 @@ export default function LoginPage() {
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      disabled={loading}
+                    >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -107,11 +110,11 @@ export default function LoginPage() {
             />
             <Box textAlign="right" sx={{ mt: 1, mb: 2 }}>
               <Link
-                href="/forgot-password"
-                sx={{
-                  fontSize: '0.9rem',
-                  cursor: 'pointer',
-                  '&:hover': { textDecoration: 'underline' }
+                to="/forgot-password"
+                style={{
+                  textDecoration: 'none',
+                  color: '#1976d2',
+                  fontSize: '0.9rem'
                 }}
               >
                 Forgot Password?
@@ -136,17 +139,21 @@ export default function LoginPage() {
             >
               {loading ? <CircularProgress size={24} /> : 'Login'}
             </Button>
-            <Divider sx={{ my: 3 }} />
-            <Typography textAlign="center">
-              Don't have an account?{' '}
-              <Link href="/register" sx={{
-                fontWeight: 'bold',
-                textDecoration: 'none',
-                '&:hover': { textDecoration: 'underline' }
-              }}>
-                Register
-              </Link>
-            </Typography>
+            <Box textAlign="center" sx={{ mt: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Don't have an account?{' '}
+                <Link
+                  to="/register"
+                  style={{
+                    textDecoration: 'none',
+                    color: '#1976d2',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Register
+                </Link>
+              </Typography>
+            </Box>
           </Box>
         </Paper>
       </Container>

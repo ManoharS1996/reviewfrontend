@@ -1,6 +1,5 @@
-// Updated RegisterPage.js
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   TextField, 
@@ -8,9 +7,7 @@ import {
   Container, 
   Box, 
   Typography, 
-  Link,
   Paper,
-  Divider,
   CircularProgress,
   InputAdornment,
   IconButton
@@ -49,6 +46,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await register(fullName, username, password);
@@ -70,9 +72,7 @@ export default function RegisterPage() {
   return (
     <Box sx={{
       minHeight: '100vh',
-      backgroundImage: 'url(https://as1.ftcdn.net/v2/jpg/03/57/34/50/1000_F_357345055_WNt03HNBMoh4uf4BGifTPuyCNd7OWB3t.jpg)',
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
+      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -83,7 +83,7 @@ export default function RegisterPage() {
           p: 4,
           borderRadius: 4,
           backdropFilter: 'blur(8px)',
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
           boxShadow: '0 8px 32px rgba(31, 38, 135, 0.37)'
         }}>
           <Box textAlign="center" mb={4}>
@@ -109,6 +109,7 @@ export default function RegisterPage() {
               value={formData.fullName}
               onChange={handleChange}
               required
+              disabled={loading}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
@@ -124,6 +125,7 @@ export default function RegisterPage() {
               value={formData.username}
               onChange={handleChange}
               required
+              disabled={loading}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
@@ -140,6 +142,7 @@ export default function RegisterPage() {
               value={formData.password}
               onChange={handleChange}
               required
+              disabled={loading}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
@@ -152,6 +155,7 @@ export default function RegisterPage() {
                     <IconButton
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
+                      disabled={loading}
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -168,6 +172,7 @@ export default function RegisterPage() {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
+              disabled={loading}
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
@@ -180,6 +185,7 @@ export default function RegisterPage() {
                     <IconButton
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       edge="end"
+                      disabled={loading}
                     >
                       {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -212,22 +218,21 @@ export default function RegisterPage() {
                 </>
               ) : 'Register'}
             </Button>
-            <Divider sx={{ my: 2 }} />
-            <Typography textAlign="center">
-              Already have an account?{' '}
-              <Link 
-                href="/login" 
-                sx={{ 
-                  fontWeight: 'bold',
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline'
-                  }
-                }}
-              >
-                Login
-              </Link>
-            </Typography>
+            <Box textAlign="center">
+              <Typography variant="body2" color="text.secondary">
+                Already have an account?{' '}
+                <Link
+                  to="/login"
+                  style={{
+                    textDecoration: 'none',
+                    color: '#1976d2',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Login
+                </Link>
+              </Typography>
+            </Box>
           </Box>
         </Paper>
       </Container>

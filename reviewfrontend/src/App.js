@@ -5,6 +5,8 @@ import { AuthProvider } from './context/AuthContext'
 import AppRoutes from './AppRoutes'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import Chatbot from './pages/Chatbot'
+
 
 const theme = createTheme({
   palette: {
@@ -21,6 +23,7 @@ export default function App() {
         <AuthProvider>
           <AppRoutes />
           <ToastContainer />
+          <Chatbot />
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
